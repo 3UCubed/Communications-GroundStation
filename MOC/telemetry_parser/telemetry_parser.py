@@ -7,7 +7,7 @@ from dependencies import es_crc
 from dependencies import cobs
 from dependencies import datacache
 import csv
-
+import glob
 
 def unixtime_to_readable_date(unix_timestamp: int) -> str:
     date_string = ""
@@ -151,8 +151,6 @@ class TelemetryMsg:
 
 class CSVFiles:
     # Class Attributes
-    script_dir = os.path.dirname(__file__)
-    csv_filepath = os.path.join(script_dir, "csv_files")
     dc_entries_dict = {
         0x00000010: "OBC_0",
         0x00000011: "ADCS_0",
@@ -188,15 +186,16 @@ class CSVFiles:
     }
 
     # Initialization
-    def __init__(self, msglist):
+    def __init__(self, msglist, input_file):
         self.msglist = msglist
+        self.output_folderpath = CSVFiles.generate_output_folderpath(input_file)
             
     # Public user function
     def generate_csv_files(self):
         for msg in self.msglist:
             if len(msg.data) > 0:
                 parsed_data = CSVFiles.parse_msg_data(msg)
-                output_filepath = CSVFiles.generate_output_filepath(msg)
+                output_filepath = self.generate_output_filepath(msg)
                 file_exists = os.path.exists(output_filepath)
 
                 if not file_exists:
@@ -204,18 +203,27 @@ class CSVFiles:
 
                 CSVFiles.append_data(msg, parsed_data, output_filepath)
 
+    # Generates output folderpath given input TLM file name
+    @staticmethod
+    def generate_output_folderpath(input_file):
+        root_dir = os.path.dirname(__file__)
+        folder_name = os.path.basename(input_file).split('.')[0]
+        output_folderpath = os.path.join(root_dir, "csv_files", folder_name)
+        os.makedirs(output_folderpath, exist_ok=False)
+        print(output_folderpath)
+        return output_folderpath
+    
+    # Generates output filepath given message type
+    def generate_output_filepath(self, msg):
+        file_name = CSVFiles.dc_entries_dict[msg.msg_type] + ".csv"
+        output_filepath = os.path.join(self.output_folderpath, file_name)
+        return output_filepath
+    
     # Parses message data using datacache parser
     @staticmethod
     def parse_msg_data(msg):
         (data, length) = datacache.dc_parser().parse_by_id(msg.msg_type, msg.data)
         return data.__dict__
-    
-    # Generates output filepath given message type
-    @staticmethod
-    def generate_output_filepath(msg):
-        file_name = CSVFiles.dc_entries_dict[msg.msg_type]
-        output_filepath = os.path.join(CSVFiles.csv_filepath, file_name)
-        return output_filepath
     
     # Creates CSV file and writes the headers
     @staticmethod
@@ -303,17 +311,18 @@ class TelemetryFile:
         print(f'{len(self.msglist)} messages parsed | invalid count: {self.invalid_msg_cnt}')
 
 
-if len(argv) > 1:
-    try:
-        tlm_file = TelemetryFile(argv[1])
-        tlm_file.parse_file()
+if __name__ == "__main__":
+    root_dir = os.path.dirname(__file__)
+    tlm_file_list = glob.glob(f"{root_dir}/tlm_files/*.TLM")
+    for file in tlm_file_list:
+        try:
+            tlm_file = TelemetryFile(file)
+            tlm_file.parse_file()
 
-        file_handler = CSVFiles(tlm_file.msglist)
-        file_handler.generate_csv_files()
+            file_handler = CSVFiles(tlm_file.msglist, tlm_file.fname)
+            file_handler.generate_csv_files()
 
-    except Exception as exc:
-        print(f'Oops: {exc}')
-    except KeyboardInterrupt:
-        print("Program interrupted")
-else:
-    print(f"usage: \n\t{argv[0]} <telemetry file name to parse> <'v' to toggle deserialization>")
+        except Exception as exc:
+            print(f'Oops: {exc}')
+        except KeyboardInterrupt:
+            print("Program interrupted")
