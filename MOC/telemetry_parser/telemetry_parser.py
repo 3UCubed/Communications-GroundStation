@@ -149,35 +149,105 @@ class TelemetryMsg:
     #     return str_repr
 
 
+class CSVFiles:
+    # Class Attributes
+    script_dir = os.path.dirname(__file__)
+    csv_filepath = os.path.join(script_dir, "csv_files")
+    dc_entries_dict = {
+        0x00000010: "OBC_0",
+        0x00000011: "ADCS_0",
+        0x00000012: "ADCS_1",
+        0x00000013: "ADCS_2",
+        0x00000014: "EPS_0",
+        0x00000015: "SSP_0",
+        0x00000016: "SSP_1",
+        0x00000017: "SSP_2",
+        0x00000019: "AOCS_CNTRL_TLM",
+        0x0000001A: "EPS_1",
+        0x0000001B: "EPS_2",
+        0x0000001C: "EPS_3",
+        0x0000001D: "EPS_4",
+        0x0000001E: "EPS_5",
+        0x0000001F: "EPS_6",
+        0x00000020: "TaskStats",
+        0x00000021: "SSP_3",
+        0x00000022: "SENSOR_MAG_PRIMARY",
+        0x00000023: "SENSOR_MAG_SECONDARY",
+        0x00000024: "SENSOR_GYRO",
+        0x00000025: "SENSOR_COARSE_SUN",
+        0x00000026: "ES_ADCS_SENSOR_MAG_PRIMARY",
+        0x00000027: "ES_ADCS_SENSOR_MAG_SECONDARY",
+        0x00000028: "ES_ADCS_SENSOR_GYRO",
+        0x00000029: "ES_ADCS_SENSOR_CSS",
+        0x00000030: "ES_ADCS_ESTIMATES_BDOT",
+        0x00000031: "ES_ADCS_CONTROL_VALUES_MTQ",
+        0x00000032: "ConOpsFlags",
+        0x00000033: "AOCS_CNTRL_SYS_STATE",
+        0x00000034: "ADCS_3",
+        0x00000035: "ADCS_4"
+    }
+
+    # Initialization
+    def __init__(self, msglist):
+        self.msglist = msglist
+            
+    # Public user function
+    def generate_csv_files(self):
+        for msg in self.msglist:
+            if len(msg.data) > 0:
+                parsed_data = CSVFiles.parse_msg_data(msg)
+                output_filepath = CSVFiles.generate_output_filepath(msg)
+                file_exists = os.path.exists(output_filepath)
+
+                if not file_exists:
+                    CSVFiles.write_header(parsed_data, output_filepath)
+
+                CSVFiles.append_data(msg, parsed_data, output_filepath)
+
+    # Parses message data using datacache parser
+    @staticmethod
+    def parse_msg_data(msg):
+        (data, length) = datacache.dc_parser().parse_by_id(msg.msg_type, msg.data)
+        return data.__dict__
+    
+    # Generates output filepath given message type
+    @staticmethod
+    def generate_output_filepath(msg):
+        file_name = CSVFiles.dc_entries_dict[msg.msg_type]
+        output_filepath = os.path.join(CSVFiles.csv_filepath, file_name)
+        return output_filepath
+    
+    # Creates CSV file and writes the headers
+    @staticmethod
+    def write_header(parsed_data, output_filepath):
+        header = ['timestamp']
+        header += list(parsed_data.keys())
+
+        with open(output_filepath, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+    
+    # Appends parsed data to CSV file
+    @staticmethod
+    def append_data(msg, parsed_data, output_filepath):
+                row = []
+                readable_timestamp = unixtime_to_readable_date(msg.timestamp)
+                row.append(readable_timestamp)
+
+                for value in parsed_data.values():
+                    row.append(value)
+
+                with open(output_filepath, mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(row)
+
+
 class TelemetryFile:
     def __init__(self, fname: str):
-        self.fname = fname
+        script_dir = os.path.dirname(__file__)
+        self.fname = os.path.join(script_dir, "tlm_files", fname)
         self.msglist = []
         self.invalid_msg_cnt = 0
-
-    def create_csv(self, csv_msg, csv_msg_data):
-        file_path = f"{csv_msg.msg_type}.csv"
-        file_exists = os.path.exists(file_path)
-
-        if not file_exists:
-            headers = ['timestamp']
-            headers += list(csv_msg_data.__dict__.keys())
-            with open(file_path, mode='w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(headers)
-
-    def append_csv(self, csv_msg, csv_msg_data):
-        row = []
-        file_path = f"{csv_msg.msg_type}.csv"
-        readable_timestamp = unixtime_to_readable_date(csv_msg.timestamp)
-        row.append(readable_timestamp)
-        for value in csv_msg_data.__dict__.values():
-            row.append(value)
-
-        with open(file_path, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(row)
-
 
     def parse_file(self) -> None:
         fhdr = TelemetryFileHdr()
@@ -203,8 +273,6 @@ class TelemetryFile:
                 msgdata.append(0)
                 msg = TelemetryMsg(msg_idx)
                 msg_idx += 1
-                # print(''.join('{:02X} '.format(b)
-                #       for b in msgdata), end='')
 
                 try:
                     msg.parse(cobs.decode(msgdata))
@@ -223,11 +291,6 @@ class TelemetryFile:
 
                 prev_rollling_cntr = msg.rolling_cntr
 
-                if len(msg.data) > 0:
-                    (data, length) = datacache.dc_parser().parse_by_id(msg.msg_type, msg.data)
-                    self.create_csv(msg, data)
-                    self.append_csv(msg, data)
-
                 self.msglist.append(msg)
 
                 # Deserialize data and append deser data to the list after the message itself
@@ -245,8 +308,9 @@ if len(argv) > 1:
         tlm_file = TelemetryFile(argv[1])
         tlm_file.parse_file()
 
-        # for msg in tlm_file.msglist:
-        #     print(f'{msg}')
+        file_handler = CSVFiles(tlm_file.msglist)
+        file_handler.generate_csv_files()
+
     except Exception as exc:
         print(f'Oops: {exc}')
     except KeyboardInterrupt:
