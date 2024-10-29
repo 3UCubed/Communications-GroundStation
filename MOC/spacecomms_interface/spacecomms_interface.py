@@ -68,6 +68,10 @@ if __name__ == "__main__":
         response = None
         while retries < 10 and response is None:
             response = download_file(file)
+            print(response)
+            if response is not None:
+                print("Success")
+                break
             retries += 1
             print(f"Retry #{retries}")
 
