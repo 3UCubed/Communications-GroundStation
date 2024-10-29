@@ -9,6 +9,7 @@ from dependencies import datacache
 import csv
 import glob
 
+# -----------------------------------------------------------------------------------------------------------
 def unixtime_to_readable_date(unix_timestamp: int) -> str:
     date_string = ""
 
@@ -19,7 +20,7 @@ def unixtime_to_readable_date(unix_timestamp: int) -> str:
 
     return date_string
 
-
+# -----------------------------------------------------------------------------------------------------------
 class TelemetryFileHdr:
     HDR_SIZE = 21
     CRC_SIZE = 2
@@ -59,7 +60,7 @@ class TelemetryFileHdr:
     def __str__(self):
         return f'TelemetryFileHdr> signature: {self.signature} | ver: {self.version} | next_write_offset: {self.next_write_offset} | last_timestamp: {self.last_timestamp} | complete: {self.file_complete} | crc: {hex(self.crc)} | is_valid: {self.is_crc_valid} | calc_crc: {hex(self.calc_crc)}'
 
-
+# -----------------------------------------------------------------------------------------------------------
 class TelemetryMsg:
     HDR_SIZE = 11
     CRC_SIZE = 2
@@ -148,7 +149,7 @@ class TelemetryMsg:
 
     #     return str_repr
 
-
+# -----------------------------------------------------------------------------------------------------------
 class CSVFiles:
     # Class Attributes
     dc_entries_dict = {
@@ -210,7 +211,6 @@ class CSVFiles:
         folder_name = os.path.basename(input_file).split('.')[0]
         output_folderpath = os.path.join(root_dir, "csv_files", folder_name)
         os.makedirs(output_folderpath, exist_ok=False)
-        print(output_folderpath)
         return output_folderpath
     
     # Generates output filepath given message type
@@ -249,7 +249,7 @@ class CSVFiles:
                     writer = csv.writer(file)
                     writer.writerow(row)
 
-
+# -----------------------------------------------------------------------------------------------------------
 class TelemetryFile:
     def __init__(self, fname: str):
         script_dir = os.path.dirname(__file__)
@@ -310,7 +310,10 @@ class TelemetryFile:
         f.close()
         print(f'{len(self.msglist)} messages parsed | invalid count: {self.invalid_msg_cnt}')
 
-
+# -----------------------------------------------------------------------------------------------------------
+# Usage: Place all .TLM files to be parsed in the 'tlm_files' directory. 
+# For each parsed .TLM file, a corresponding folder will be created inside 
+# the 'csv_files' directory, where the generated CSV files will be stored.
 if __name__ == "__main__":
     root_dir = os.path.dirname(__file__)
     tlm_file_list = glob.glob(f"{root_dir}/tlm_files/*.TLM")
