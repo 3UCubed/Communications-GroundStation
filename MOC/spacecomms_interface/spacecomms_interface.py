@@ -70,4 +70,5 @@ if __name__ == "__main__":
             if response:  # If the response is not 0 or an error value
                 break
             retries += 1
+            print(f"retry #{retries}")
         current_file_number += 1
