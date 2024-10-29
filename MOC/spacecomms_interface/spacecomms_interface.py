@@ -43,7 +43,6 @@ def get_filenames():
     regex_pattern = "\d{5}.TLM"
     root_dir = os.path.dirname(__file__)
     dirlist_filepath = os.path.join(root_dir, "DIRLIST.TXT")
-    print(dirlist_filepath)
     with open(dirlist_filepath, 'r', encoding='ISO-8859-1') as file:
         dirlist_content = file.read()
     filenames = re.findall(regex_pattern, dirlist_content)
@@ -61,9 +60,9 @@ if __name__ == "__main__":
     download_file("DIRLIST.TXT")
 
     filenames = get_filenames()
-    print(filenames)
     number_of_files = len(filenames)
     current_file_number = 1
     for file in filenames:
         print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
         download_file(file)
+        current_file_number += 1
