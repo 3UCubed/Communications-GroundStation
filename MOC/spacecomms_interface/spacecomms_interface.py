@@ -3,6 +3,8 @@ from web_socket_api.CommandProtocol import send_command
 from web_socket_api.constants import SatelliteId, CommandType, TripType, ModuleMac, RadioConfiguration, EncyptionKey
 from web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key
 import logging
+import re
+import os
 
 # For API containing OBC commands
 obc_api = FP_API_OBC()
@@ -36,13 +38,32 @@ def init_radio():
     update_aes_key(EncyptionKey.AES_IV, EncyptionKey.AES_KEY)
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    init_radio()
+def get_filenames():
+    filenames = []
+    regex_pattern = "\d{5}.TLM"
+    root_dir = os.path.dirname(__file__)
+    dirlist_filepath = os.path.join(root_dir, "DIRLIST.TXT")
+    print(dirlist_filepath)
+    with open(dirlist_filepath, 'r', encoding='ISO-8859-1') as file:
+        dirlist_content = file.read()
+    filenames = re.findall(regex_pattern, dirlist_content)
+    return filenames
 
-    print("Getting Uptime...")
-    get_uptime()
+
+if __name__ == "__main__":
+    # logging.basicConfig(level=logging.INFO)
+    # init_radio()
+
+    # print("Getting Uptime...")
+    # get_uptime()
 
     print("Downloading dirlist...")
     download_file("DIRLIST.TXT")
-    
+
+    filenames = get_filenames()
+    print(filenames)
+    number_of_files = len(filenames)
+    current_file_number = 1
+    for file in filenames:
+        print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
+        download_file(file)
