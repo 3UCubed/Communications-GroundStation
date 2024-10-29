@@ -64,5 +64,10 @@ if __name__ == "__main__":
     current_file_number = 1
     for file in filenames:
         print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
-        download_file(file)
+        retries = 0
+        while retries < 10:
+            response = download_file(file)
+            if response:  # If the response is not 0 or an error value
+                break
+            retries += 1
         current_file_number += 1

@@ -36,7 +36,9 @@ def send_command(satId: int, commandType: int, tripType: int, moduleMac: int, pa
         response = client.readResponse()
         if response.get("type") == "Error":
             logging.error("%s", response)
-            exit(0)
+            print("Error, retrying...")
+            return 0
+    #        exit(0)
 
     response = base64.b64decode(response["payload"].encode("ascii"))
     return response
