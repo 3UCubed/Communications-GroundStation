@@ -5,6 +5,7 @@ from web_socket_api.RadioConfiguration import set_radio_address, update_frequenc
 import logging
 import re
 import os
+import time
 
 # For API containing OBC commands
 obc_api = FP_API_OBC()
@@ -20,16 +21,22 @@ def get_uptime():
 
 # Downloads a file given a filename
 def download_file(file_name: str):
+    status = 1
     file_format = "{0}\0".format(file_name).encode("utf-8")
     serialized_request = [0, 0, 0, 0, 0]
     serialized_request.extend(file_format)
     serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FILE_DOWNLOAD, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request, add_payload_length=False)
-    
-    with open(file_name, "wb") as file:
+
+    if serialized_response is None:
+        status = 0
+        return status
+    root = os.path.dirname(__file__)
+    file_path = os.path.join(root, "downloaded_files", file_name)
+    with open(file_path, "wb") as file:
         file.write(serialized_response)
     
     logging.info("File {0} written to current directory".format(file_name))
-
+    return status
 
 # Initializing the radio
 def init_radio():
@@ -62,17 +69,29 @@ if __name__ == "__main__":
     filenames = get_filenames()
     number_of_files = len(filenames)
     current_file_number = 1
+    missed_files = []
+    total_time_start = time.perf_counter()
     for file in filenames:
+        start_time = time.perf_counter()
         print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
+        status = download_file(file)
         retries = 0
-        response = None
-        while retries < 10 and response is None:
-            response = download_file(file)
-            print(response)
-            if response is not None:
-                print("Success")
-                break
+
+        while retries <= 10 and status == 0:
             retries += 1
-            print(f"Retry #{retries}")
+            print(f"Problem downloading file, retry #{retries}")
+            time.sleep(5)
+            status = download_file(file)
+
+        if status == 0:
+            missed_files += file
 
         current_file_number += 1
+        end_time = time.perf_counter()
+        elapsed_time = round(end_time - start_time)
+        print(f"Process took {elapsed_time} seconds.")
+    total_time_end = time.perf_counter()
+    total_elapsed_time = round(total_time_end - total_time_start)
+    print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
+    print("Missed files: ", end="")
+    print(', '.join(missed_files))
