@@ -49,7 +49,7 @@ def get_filenames():
     filenames = []
     regex_pattern = "\d{5}.TLM"
     root_dir = os.path.dirname(__file__)
-    dirlist_filepath = os.path.join(root_dir, "DIRLIST.TXT")
+    dirlist_filepath = os.path.join(root_dir, "downloaded_files", "DIRLIST.TXT")
     with open(dirlist_filepath, 'r', encoding='ISO-8859-1') as file:
         dirlist_content = file.read()
     filenames = re.findall(regex_pattern, dirlist_content)
