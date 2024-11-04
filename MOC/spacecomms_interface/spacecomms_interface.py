@@ -1,7 +1,7 @@
 from client_apps.OBCClientApp import FP_API_OBC
 from web_socket_api.CommandProtocol import send_command
 from web_socket_api.constants import SatelliteId, CommandType, TripType, ModuleMac, RadioConfiguration, EncyptionKey
-from web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key
+from web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key, start_beacon_listening
 import logging
 import re
 import os
@@ -55,14 +55,7 @@ def get_filenames():
     filenames = re.findall(regex_pattern, dirlist_content)
     return filenames
 
-
-if __name__ == "__main__":
-    # logging.basicConfig(level=logging.INFO)
-    # init_radio()
-
-    # print("Getting Uptime...")
-    # get_uptime()
-
+def download_telemetry_files():
     print("Downloading dirlist...")
     download_file("DIRLIST.TXT")
 
@@ -95,3 +88,28 @@ if __name__ == "__main__":
     print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
     print("Missed files: ", end="")
     print(', '.join(missed_files))
+    
+
+def print_menu():
+    print(f"\n1  ------------  Get Uptime")
+    print(f"2  ------------  Download TLM files")
+    print(f"3  ------------  Start beacon listener")
+    print(f"4  ------------  Quit")
+
+
+
+if __name__ == "__main__":
+    # logging.basicConfig(level=logging.INFO)
+    # init_radio()
+
+    print_menu()
+    cmd = input("\nEnter a command... ")
+    
+    if cmd == 1:
+        get_uptime()
+    elif cmd == 2:
+        download_telemetry_files()
+    elif cmd == 3:
+        start_beacon_listening()
+    else:
+        exit(0)

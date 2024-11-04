@@ -1,6 +1,7 @@
 import logging
 import random
 from web_socket_client import WebSocketClient
+import os
 
 # JSON Message UpdateAESKey
 UPDATE_AES_KEY = {
@@ -25,6 +26,19 @@ RADIO_CONN = {
     "id": random.randint(0, 9999),
     "remoteRadioMac": 0,
     "type": "RadioConn"
+}
+
+# JSON Message BeaconListen
+BEACON_LISTEN = {
+    "id": random.randint(0, 9999),
+    "type": "BeaconListen"
+}
+
+# JSON Message Beacon
+BEACON = {
+    "ax25Frame": [0] * 256,
+    "requestId": 0,
+    "type": "Beacon"
 }
 
 def update_aes_key(aesIV: str, aesKey: str):
@@ -67,3 +81,26 @@ def set_radio_address(remoteRadioMac: int):
         if response.get("type") == "Error":
             logging.error("%s", response)
             exit(0)
+
+def start_beacon_listening():
+    message = BEACON_LISTEN
+    listen_id = message["id"]
+    client = WebSocketClient.WebSocketClient(enableSSL=False)
+    client.send(payload_dict=message)
+    root = os.path.dirname(__file__)
+    file_path = os.path.join(root, "raw_beacons", "beacons.txt")
+    print(file_path)
+    with open(file_path, "wb") as file:
+        i = 0
+        while i < 10:
+            response = {}
+            response = client.readResponse()
+            if response.get("type") == "Beacon":
+                if listen_id != response.get("requestId"):
+                    print("Mismatched ID's for beacon request")
+                frame = response["ax25Frame"]
+                file.write(frame)
+                i += 1
+            elif response.get("type") == "Error":
+                logging.error("%s", response)
+                exit(0)
