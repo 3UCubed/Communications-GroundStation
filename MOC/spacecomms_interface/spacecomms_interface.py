@@ -99,17 +99,16 @@ def print_menu():
 
 
 if __name__ == "__main__":
-    # logging.basicConfig(level=logging.INFO)
-    # init_radio()
+    logging.basicConfig(level=logging.INFO)
+    init_radio()
 
     print_menu()
     cmd = input("\nEnter a command... ")
-    
-    if cmd == 1:
+    if cmd == "1":
         get_uptime()
-    elif cmd == 2:
+    elif cmd == "2":
         download_telemetry_files()
-    elif cmd == 3:
+    elif cmd == "3":
         start_beacon_listening()
     else:
         exit(0)

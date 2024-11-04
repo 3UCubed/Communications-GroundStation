@@ -2,6 +2,7 @@ import logging
 import random
 from web_socket_client import WebSocketClient
 import os
+import base64
 
 # JSON Message UpdateAESKey
 UPDATE_AES_KEY = {
@@ -83,14 +84,15 @@ def set_radio_address(remoteRadioMac: int):
             exit(0)
 
 def start_beacon_listening():
+    current_dir = os.path.dirname(__file__)
+    parent_dir = os.path.dirname(current_dir)
+    filepath = os.path.join(parent_dir, "raw_beacons", "raw_beacons.bin")
+
     message = BEACON_LISTEN
     listen_id = message["id"]
     client = WebSocketClient.WebSocketClient(enableSSL=False)
     client.send(payload_dict=message)
-    root = os.path.dirname(__file__)
-    file_path = os.path.join(root, "raw_beacons", "beacons.txt")
-    print(file_path)
-    with open(file_path, "wb") as file:
+    with open(filepath, "wb") as file:
         i = 0
         while i < 10:
             response = {}
@@ -99,7 +101,8 @@ def start_beacon_listening():
                 if listen_id != response.get("requestId"):
                     print("Mismatched ID's for beacon request")
                 frame = response["ax25Frame"]
-                file.write(frame)
+                decoded_frame = base64.b64decode(frame)
+                file.write(decoded_frame)
                 i += 1
             elif response.get("type") == "Error":
                 logging.error("%s", response)
