@@ -1,5 +1,19 @@
+#  ---------------------------------------------------------------------------------------------------------------------- #
+# Author: Jared Morrison                                                                                                  #
+# Description: Parses beacons received from SpaceComms.                                                                   #
+# Date: November 5th, 2024                                                                                                #
+#                                                                                                                         #
+# Beacon Structure:                                                                                                       #
+# | BeaconHeader | BeaconMsgHeader | Beacon Data | BeaconMsgHeader | Beacon Data | ... 77 bytes                           #
+#                                                                                                                         #
+# Note:                                                                                                                   #
+# Each beacon only has a single BeaconHeader. Each message within that beacon has its own BeaconMsgHeader and data.       #
+# ----------------------------------------------------------------------------------------------------------------------- #
+
+
 import os
 from struct import unpack_from
+from rich import print
 
 class BeaconMsgHeader:
     MSG_HEADER_SIZE = 4
@@ -21,9 +35,6 @@ class BeaconMsgHeader:
             return BeaconMsgHeader.MSG_HEADER_SIZE
         else:
             return 0
-        
-    def __str__(self):
-        return f"   BeaconMsgHeader> DC ID: {hex(self.dc_id)} | MSG Length: {hex(self.msg_length)}"
 
 
 class BeaconMsg:
@@ -34,6 +45,11 @@ class BeaconMsg:
     def parse(self, data: bytes):
         for byte in data:
             self.data.append(byte)
+    
+    def __str__(self):
+        str_repr = f"\tBeaconMsgHeader> DC ID: {hex(self.header.dc_id)} | MSG Length: {hex(self.header.msg_length)}\n"
+        str_repr += f"\t\tBeaconMsgData> {self.data}"
+        return str_repr
 
 class BeaconHeader:
     HEADER_SIZE = 7
@@ -80,44 +96,43 @@ class BeaconFile:
 
         # While we aren't at the end of the file...
         while current_file_pos < file_length - BeaconFile.BEACON_SIZE:
+            # Create a new beacon header object
             beacon_header = BeaconHeader()
 
             # Get the header of the current beacon
             beacon_header.parse(file.read(BeaconHeader.HEADER_SIZE))
             print(beacon_header)
-
             # Update current file position
             current_file_pos = file.tell()
             
             # Get all messages from current beacon
             while current_file_pos < (BeaconFile.BEACON_SIZE * current_beacon_number):
+                # Create new message object for each message in the current beacon
                 beacon_msg = BeaconMsg()
 
                 # Parse the header for the message
                 beacon_msg.header.parse(file.read(BeaconMsgHeader.MSG_HEADER_SIZE))
-                print(beacon_msg.header)
                 
+                # Update current file position
                 current_file_pos = file.tell()
+
+                # If the message is split, just read until the end of the current beacon
                 if (beacon_msg.header.msg_length + current_file_pos > (BeaconFile.BEACON_SIZE * current_beacon_number)):
                     beacon_msg.parse(file.read((BeaconFile.BEACON_SIZE * current_beacon_number) - current_file_pos))
+                
+                # Otherwise, read the full length of the beacon message
                 else:
                     beacon_msg.parse(file.read(beacon_msg.header.msg_length))
 
-                print(f"    {beacon_msg.data}")
                 # Add the parsed message to the message list
                 self.msg_list.append(beacon_msg)
-
+                print(beacon_msg)
                 # Update current file position
                 current_file_pos = file.tell()
+
+            # Update current beacon number
             current_beacon_number += 1
 
-
-
-
-
-
-
-    
 
 if __name__ == "__main__":
     root = os.path.dirname(__file__)
