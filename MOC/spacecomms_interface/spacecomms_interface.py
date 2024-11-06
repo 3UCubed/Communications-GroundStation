@@ -6,6 +6,7 @@ import logging
 import re
 import os
 import time
+import sys
 
 # For API containing OBC commands
 obc_api = FP_API_OBC()
@@ -90,20 +91,13 @@ def download_telemetry_files():
     print(', '.join(missed_files))
     
 
-def print_menu():
-    print(f"\n1  ------------  Get Uptime")
-    print(f"2  ------------  Download TLM files")
-    print(f"3  ------------  Start beacon listener")
-    print(f"4  ------------  Quit")
-
-
-
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     init_radio()
 
-    print_menu()
-    cmd = input("\nEnter a command... ")
+    if len(sys.argv) > 1:
+        cmd = sys.argv[1]
+
     if cmd == "1":
         get_uptime()
     elif cmd == "2":
