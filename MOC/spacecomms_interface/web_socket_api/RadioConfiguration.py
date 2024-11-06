@@ -94,7 +94,7 @@ def start_beacon_listening():
     client.send(payload_dict=message)
     with open(filepath, "wb") as file:
         i = 0
-        while i < 10:
+        while i < 1:
             response = {}
             response = client.readResponse()
             if response.get("type") == "Beacon":
@@ -102,7 +102,7 @@ def start_beacon_listening():
                     print("Mismatched ID's for beacon request")
                 frame = response["ax25Frame"]
                 decoded_frame = base64.b64decode(frame)
-                file.write(decoded_frame)
+                print(' '.join(f'{byte:02x}' for byte in decoded_frame))
                 i += 1
             elif response.get("type") == "Error":
                 logging.error("%s", response)
