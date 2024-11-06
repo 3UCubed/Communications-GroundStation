@@ -101,7 +101,7 @@ def start_beacon_listening():
                     print("Mismatched ID's for beacon request")
                 frame = response["ax25Frame"]
                 decoded_frame = base64.b64decode(frame)
-                print(' '.join(f'{byte:02x}' for byte in decoded_frame), flush=True)
+                print(''.join(f'{byte:02x}' for byte in decoded_frame), flush=True)
             elif response.get("type") == "Error":
                 logging.error("%s", response)
                 exit(0)
