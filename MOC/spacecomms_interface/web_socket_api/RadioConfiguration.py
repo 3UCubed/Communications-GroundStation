@@ -93,8 +93,7 @@ def start_beacon_listening():
     client = WebSocketClient.WebSocketClient(enableSSL=False)
     client.send(payload_dict=message)
     with open(filepath, "wb") as file:
-        i = 0
-        while i < 1:
+        while True:
             response = {}
             response = client.readResponse()
             if response.get("type") == "Beacon":
@@ -102,8 +101,7 @@ def start_beacon_listening():
                     print("Mismatched ID's for beacon request")
                 frame = response["ax25Frame"]
                 decoded_frame = base64.b64decode(frame)
-                print(' '.join(f'{byte:02x}' for byte in decoded_frame))
-                i += 1
+                print(' '.join(f'{byte:02x}' for byte in decoded_frame), flush=True)
             elif response.get("type") == "Error":
                 logging.error("%s", response)
                 exit(0)
