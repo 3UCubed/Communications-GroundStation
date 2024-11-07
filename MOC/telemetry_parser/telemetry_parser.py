@@ -219,25 +219,6 @@ class CSVFiles:
         output_filepath = os.path.join(self.output_folderpath, file_name)
         return output_filepath
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     # Parses message data using datacache parser
     @staticmethod
     def parse_msg_data(msg):
@@ -351,78 +332,63 @@ class CSVFiles:
 
         # Bits 0-7
         # 01 00 10 11
-        new_dict['Attitude_Estimation_Mode'] = (byte_0 >> 4) & 0b1111   # 01 00
-        new_dict['Control_Mode'] = byte_0 & 0b1111                      # 10 11    
+        new_dict['Attitude_Estimation_Mode'] = byte_0 & 0b1111  # 10 11
+        new_dict['Control_Mode'] = (byte_0 >> 4) & 0b1111       # 01 00    
         
         # Bits 8-15
         # 01 00 10 11
-        new_dict['ADCS_Run_Mode'] = (byte_1 >> 6) & 0b11                # 01
-        new_dict['ASGP4_Mode'] = (byte_1 >> 4) & 0b11                   # 00
-        new_dict['CubeControl_Signal_Enabled'] = (byte_1 >> 3) & 0b1    # 1
-        new_dict['CubeControl_Motor_Enabled'] = (byte_1 >> 2) & 0b1     # 0
-        new_dict['CubeSense1_Enabled'] = (byte_1 >> 1) & 0b1            # 1
-        new_dict['CubeSense2_Enabled'] = byte_1 & 0b1                   # 1
+        new_dict['ADCS_Run_Mode'] = byte_1 & 0b1                        # 1
+        new_dict['ASGP4_Mode'] = (byte_1 >> 1) & 0b1                    # 1
+        new_dict['CubeControl_Signal_Enabled'] = (byte_1 >> 2) & 0b1    # 0
+        new_dict['CubeControl_Motor_Enabled'] = (byte_1 >> 3) & 0b1     # 1
+        new_dict['CubeSense1_Enabled'] = (byte_1 >> 4) & 0b11           # 00
+        new_dict['CubeSense2_Enabled'] = (byte_1 >> 6) & 0b11           # 01
 
         # Bits 16-23
         # 01 00 10 11
-        new_dict['CubeWheel1_Enabled'] = (byte_2 >> 7) & 0b1        # 0
-        new_dict['CubeWheel2_Enabled'] = (byte_2 >> 6) & 0b1        # 1
-        new_dict['CubeWheel3_Enabled'] = (byte_2 >> 5) & 0b1        # 0
-        new_dict['CubeStar_Enabled'] = (byte_2 >> 4) & 0b1          # 0
-        new_dict['GPS_Receiver_Enabled'] = (byte_2 >> 3) & 0b1      # 1
-        new_dict['GPS_LNA_Power_Enabled'] = (byte_2 >> 2) & 0b1     # 0
-        new_dict['Motor_Driver_Enabled'] = (byte_2 >> 1) & 0b1      # 1
-        new_dict['Sun_is_Above_Local_Horizon'] = byte_2 & 0b1       # 1
+        new_dict['CubeWheel1_Enabled'] = byte_2 & 0b1                   # 1
+        new_dict['CubeWheel2_Enabled'] = (byte_2 >> 1) & 0b1            # 1
+        new_dict['CubeWheel3_Enabled'] = (byte_2 >> 2) & 0b1            # 0
+        new_dict['CubeStar_Enabled'] = (byte_2 >> 3) & 0b1              # 1
+        new_dict['GPS_Receiver_Enabled'] = (byte_2 >> 4) & 0b1          # 0
+        new_dict['GPS_LNA_Power_Enabled'] = (byte_2 >> 5) & 0b1         # 0
+        new_dict['Motor_Driver_Enabled'] = (byte_2 >> 6) & 0b1          # 1
+        new_dict['Sun_is_Above_Local_Horizon'] = (byte_2 >> 7) & 0b1    # 0
 
         # Bits 24-31
         # 01 00 10 11
-        new_dict['CubeSense1_Communications_Error'] = (byte_3 >> 7) & 0b1           # 0
-        new_dict['CubeSense2_Communications_Error'] = (byte_3 >> 6) & 0b1           # 1
-        new_dict['CubeControl_Signal_Communications_Error'] = (byte_3 >> 5) & 0b1   # 0
-        new_dict['CubeControl_Motor_Communications_Error'] = (byte_3 >> 4) & 0b1    # 0
-        new_dict['CubeWheel1_Communications_Error'] = (byte_3 >> 3) & 0b1           # 1
-        new_dict['CubeWheel2_Communications_Error'] = (byte_3 >> 2) & 0b1           # 0
-        new_dict['CubeWheel3_Communications_Error'] = (byte_3 >> 1) & 0b1           # 1
-        new_dict['CubeStar_Communications_Error'] = byte_3 & 0b1                    # 1
+        new_dict['CubeSense1_Communications_Error'] = byte_3 & 0b1                  # 1
+        new_dict['CubeSense2_Communications_Error'] = (byte_3 >> 1) & 0b1           # 1
+        new_dict['CubeControl_Signal_Communications_Error'] = (byte_3 >> 2) & 0b1   # 0
+        new_dict['CubeControl_Motor_Communications_Error'] = (byte_3 >> 3) & 0b1    # 1
+        new_dict['CubeWheel1_Communications_Error'] = (byte_3 >> 4) & 0b1           # 0
+        new_dict['CubeWheel2_Communications_Error'] = (byte_3 >> 5) & 0b1           # 0
+        new_dict['CubeWheel3_Communications_Error'] = (byte_3 >> 6) & 0b1           # 1
+        new_dict['CubeStar_Communications_Error'] = (byte_3 >> 7) & 0b1             # 0
 
         # Bits 32-39
         # 01 00 10 11
-        new_dict['Magnetometer_Range_Error'] = (byte_4 >> 7) & 0b1          # 0
-        new_dict['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1    # 1
-        new_dict['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 5) & 0b1     # 0
-        new_dict['Cam1_Sensor_Busy_Error'] = (byte_4 >> 4) & 0b1            # 0
-        new_dict['Cam1_Sensor_Detection_Error'] = (byte_4 >> 3) & 0b1       # 1
-        new_dict['Sun_Sensor_Range_Error'] = (byte_4 >> 2) & 0b1            # 0
-        new_dict['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    # 1
-        new_dict['Cam2_3V3_Overcurrent_Detected'] = byte_4 & 0b1            # 1
+        new_dict['Magnetometer_Range_Error'] = byte_4 & 0b1                 # 1
+        new_dict['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    # 1
+        new_dict['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 2) & 0b1     # 0
+        new_dict['Cam1_Sensor_Busy_Error'] = (byte_4 >> 3) & 0b1            # 1
+        new_dict['Cam1_Sensor_Detection_Error'] = (byte_4 >> 4) & 0b1       # 0
+        new_dict['Sun_Sensor_Range_Error'] = (byte_4 >> 5) & 0b1            # 0
+        new_dict['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1    # 1
+        new_dict['Cam2_3V3_Overcurrent_Detected'] = (byte_4 >> 7) & 0b1     # 0
 
         # Bits 40-47
         # 01 00 10 11
-        new_dict['Cam2_Sensor_Busy_Error'] = (byte_5 >> 7) & 0b1        # 0
-        new_dict['Cam2_Sensor_Detection_Error'] = (byte_5 >> 6) & 0b1   # 1
-        new_dict['Nadir_Sensor_Range_Error'] = (byte_5 >> 5) & 0b1      # 0
-        new_dict['Rate_Sensor_Range_Error'] = (byte_5 >> 4) & 0b1       # 0
-        new_dict['Wheel_Speed_Range_Error'] = (byte_5 >> 3) & 0b1       # 1
-        new_dict['Coarse_Sun_Sensor_Error'] = (byte_5 >> 2) & 0b1       # 0
-        new_dict['StarTracker_Match_Error'] = (byte_5 >> 1) & 0b1       # 1
-        new_dict['StarTracker_Overcurrent_Detected'] = byte_5 & 0b1     # 1
+        new_dict['Cam2_Sensor_Busy_Error'] = byte_5 & 0b1                   # 1
+        new_dict['Cam2_Sensor_Detection_Error'] = (byte_5 >> 1) & 0b1       # 1
+        new_dict['Nadir_Sensor_Range_Error'] = (byte_5 >> 2) & 0b1          # 0
+        new_dict['Rate_Sensor_Range_Error'] = (byte_5 >> 3) & 0b1           # 1
+        new_dict['Wheel_Speed_Range_Error'] = (byte_5 >> 4) & 0b1           # 0
+        new_dict['Coarse_Sun_Sensor_Error'] = (byte_5 >> 5) & 0b1           # 0
+        new_dict['StarTracker_Match_Error'] = (byte_5 >> 6) & 0b1           # 1
+        new_dict['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  # 0
 
         return new_dict
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     # Creates CSV file and writes the headers
     @staticmethod
