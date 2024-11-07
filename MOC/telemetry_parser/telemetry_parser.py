@@ -233,7 +233,13 @@ class CSVFiles:
             data_dict = CSVFiles.parse_adcs_2_vec(data_dict)
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "AOCS_CNTRL_TLM":
             data_dict = CSVFiles.parse_aocs_cntrl_tlm_vec(data_dict)
-        
+        elif CSVFiles.dc_entries_dict[msg.msg_type] == "EPS_3": # Hasn't been tested, tlm files don't have this right now
+            data_dict = CSVFiles.parse_eps_3_vec(data_dict)
+        elif CSVFiles.dc_entries_dict[msg.msg_type] == "EPS_4": # Hasn't been tested, tlm files don't have this right now
+            data_dict = CSVFiles.parse_eps_4_vec(data_dict)
+        elif CSVFiles.dc_entries_dict[msg.msg_type] == "TaskStats":
+            data_dict = CSVFiles.parse_taskstats_vec(data_dict)
+
         return data_dict
     
 
@@ -399,7 +405,6 @@ class CSVFiles:
         new_dict = {}
         new_keys = []
         new_values = []
-        print(data_dict)
         for key, value in data_dict.items():
             if key == 'uint16__adcsErrFlags':
                 new_keys.append('adcsErrFlags')
@@ -418,15 +423,123 @@ class CSVFiles:
                 new_values += [value[0], value[1], value[2]]
 
             new_dict.update({key: value for key, value in zip(new_keys, new_values)})
-        print(new_dict)
         return new_dict
 
 
+    @staticmethod
+    def parse_eps_3_vec(data_dict):
+        new_dict = {}
+        new_keys = []
+        new_values = []
+        for key, value in data_dict.items():
+            if key == 'int16__VOLT_BRDSUP':
+                new_keys.append('VOLT_BRDSUP')
+                new_values.append(value)
+            elif key == 'int16__TEMP_MCU':
+                new_keys.append('TEMP_MCU')
+                new_values.append(value)
+            elif key == 'int16__VIP_INPUT_Voltage':
+                new_keys.append('VIP_INPUT_Voltage')
+                new_values.append(value)
+            elif key == 'int16__VIP_INPUT_Current':
+                new_keys.append('VIP_INPUT_Current')
+                new_values.append(value)
+            elif key == 'int16__VIP_INPUT_Power':
+                new_keys.append('VIP_INPUT_Power')
+                new_values.append(value)
+            elif key == 'uint16__STAT_BU':
+                new_keys.append('STAT_BU')
+                new_values.append(value)
+            elif key == 'a__int16__VIP_BP_INPUT_Voltage':
+                new_keys += ['BP_INPUT_Voltage_1', 'BP_INPUT_Voltage_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__VIP_BP_INPUT_Current':
+                new_keys += ['BP_INPUT_Current_1', 'BP_INPUT_Current_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__VIP_BP_INPUT_Power':
+                new_keys += ['BP_INPUT_Power_1', 'BP_INPUT_Power_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__STAT_BP':
+                new_keys += ['STAT_BP_1', 'STAT_BP_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__VOLT_CELL1':
+                new_keys += ['VOLT_CELL1_1', 'VOLT_CELL1_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__VOLT_CELL2':
+                new_keys += ['VOLT_CELL2_1', 'VOLT_CELL2_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__VOLT_CELL3':
+                new_keys += ['VOLT_CELL3_1', 'VOLT_CELL3_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__VOLT_CELL4':
+                new_keys += ['VOLT_CELL4_1', 'VOLT_CELL4_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__BAT_TEMP1':
+                new_keys += ['BAT_TEMP1_1', 'BAT_TEMP1_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__BAT_TEMP2':
+                new_keys += ['BAT_TEMP2_1', 'BAT_TEMP2_2']
+                new_values += [value[0], value[1]]
+            elif key == 'a__int16__BAT_TEMP3':
+                new_keys += ['BAT_TEMP3_1', 'BAT_TEMP3_2']
+                new_values += [value[0], value[1]]
+
+            new_dict.update({key: value for key, value in zip(new_keys, new_values)})
+
+        return new_dict
 
 
+    @staticmethod
+    def parse_eps_4_vec(data_dict):
+        new_dict = {}
+        new_keys = []
+        new_values = []
+        for key, value in data_dict.items():
+            if key == 'int16__VOLT_BRDSUP':
+                new_keys.append('VOLT_BRDSUP')
+                new_values.append(value)
+            elif key == 'int16__TEMP_MCU':
+                new_keys.append('TEMP_MCU')
+                new_values.append(value)
+            elif key == 'int16__VIP_OUTPUT_Voltage':
+                new_keys.append('VIP_OUTPUT_Voltage')
+                new_values.append(value)
+            elif key == 'int16__VIP_OUTPUT_Current':
+                new_keys.append('VIP_OUTPUT_Current')
+                new_values.append(value)
+            elif key == 'int16__VIP_OUTPUT_Power':
+                new_keys.append('VIP_OUTPUT_Power')
+                new_values.append(value)
+            elif key == 'a__int16__VIP_CC_OUTPUT_Voltage':
+                new_keys += ['VIP_CC_OUTPUT_Voltage_1', 'VIP_CC_OUTPUT_Voltage_2', 'VIP_CC_OUTPUT_Voltage_3', 'VIP_CC_OUTPUT_Voltage_4']
+                new_values += [value[0], value[1], value[2], value[3]]
+            elif key == 'a__int16__VIP_CC_OUTPUT_Current':
+                new_keys += ['VIP_CC_OUTPUT_Current_1', 'VIP_CC_OUTPUT_Current_2', 'VIP_CC_OUTPUT_Current_3', 'VIP_CC_OUTPUT_Current_4']
+                new_values += [value[0], value[1], value[2], value[3]]
+            elif key == 'a__int16__VIP_CC_OUTPUT_Power':
+                new_keys += ['VIP_CC_OUTPUT_Power_1', 'VIP_CC_OUTPUT_Power_2', 'VIP_CC_OUTPUT_Power_3', 'VIP_CC_OUTPUT_Power_4']
+                new_values += [value[0], value[1], value[2], value[3]]
+            elif key == 'a__int16__CCx_VOLT_IN_MPPT':
+                new_keys += ['VOLT_IN_MPPT_1', 'VOLT_IN_MPPT_2', 'VOLT_IN_MPPT_3', 'VOLT_IN_MPPT_4']
+                new_values += [value[0], value[1], value[2], value[3]]
+            elif key == 'a__int16__CCx_CURR_IN_MPPT':
+                new_keys += ['CURR_IN_MPPT_1', 'CURR_IN_MPPT_2', 'CURR_IN_MPPT_3', 'CURR_IN_MPPT_4']
+                new_values += [value[0], value[1], value[2], value[3]]
+            elif key == 'a__int16__CCx_VOLT_OU_MPPT':
+                new_keys += ['VOLT_OU_MPPT_1', 'VOLT_OU_MPPT_2', 'VOLT_OU_MPPT_3', 'VOLT_OU_MPPT_4']
+                new_values += [value[0], value[1], value[2], value[3]]
+            elif key == 'a__int16__CCx_CURR_OU_MPPT':
+                new_keys += ['CURR_OU_MPPT_1', 'CURR_OU_MPPT_2', 'CURR_OU_MPPT_3', 'CURR_OU_MPPT_4']
+                new_values += [value[0], value[1], value[2], value[3]]
+
+            new_dict.update({key: value for key, value in zip(new_keys, new_values)})
+
+        return new_dict
 
 
-
+    @staticmethod
+    def parse_taskstats_vec(data_dict):
+        print(data_dict)
 
 
     # Creates CSV file and writes the headers
