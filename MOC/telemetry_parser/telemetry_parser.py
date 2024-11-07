@@ -219,12 +219,211 @@ class CSVFiles:
         output_filepath = os.path.join(self.output_folderpath, file_name)
         return output_filepath
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     # Parses message data using datacache parser
     @staticmethod
     def parse_msg_data(msg):
         (data, length) = datacache.dc_parser().parse_by_id(msg.msg_type, msg.data)
-        return data.__dict__
+        data_dict = data.__dict__
+
+        if CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_0":
+            data_dict = CSVFiles.parse_adcs_0_vec(data_dict)
+        elif CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_1":
+            data_dict = CSVFiles.parse_adcs_1_vec(data_dict)
+        elif CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_2":
+            data_dict = CSVFiles.parse_adcs_2_vec(data_dict)
+        
+        return data_dict
     
+
+    @staticmethod
+    def parse_adcs_0_vec(data_dict):
+        new_dict = {}
+        new_keys = []
+        new_values = []
+
+        for key, value in data_dict.items():
+            if key == 'a__int16__magFieldVec':
+                new_keys += ['magFieldVec_X', 'magFieldVec_Y', 'magFieldVec_Z']
+            elif key == 'a__int16__coarseSunVec':
+                new_keys += ['coarseSunVec_X', 'coarseSunVec_Y', 'coarseSunVec_Z']
+            elif key == 'a__int16__fineSunVec':
+                new_keys += ['fineSunVec_X', 'fineSunVec_Y', 'fineSunVec_Z']
+            elif key == 'a__int16__nadirVec':
+                new_keys += ['nadirVec_X', 'nadirVec_Y', 'nadirVec_Z']
+            elif key == 'a__int16__angRateVec':
+                new_keys += ['angRateVec_X', 'angRateVec_Y', 'angRateVec_Z']
+            elif key == 'a__int16__wheelSpeedArr':
+                new_keys += ['wheelSpeedArr_X', 'wheelSpeedArr_Y', 'wheelSpeedArr_Z']
+
+            new_values += [value[0], value[1], value[2]]
+            new_dict.update({key: value for key, value in zip(new_keys, new_values)})
+
+        return new_dict
+
+    @staticmethod
+    def parse_adcs_1_vec(data_dict):
+        new_dict = {}
+        new_keys = []
+        new_values = []
+        for key, value in data_dict.items():
+            if key == 'a__int16__estQSet':
+                new_keys += ['estQSet_Q1', 'estQSet_Q2', 'estQSet_Q3']
+            elif key == 'a__int16__estAngRateVec':
+                new_keys += ['estQSet_X', 'estQSet_Y', 'estQSet_Z']
+
+            new_values += [value[0], value[1], value[2]]
+            new_dict.update({key: value for key, value in zip(new_keys, new_values)})
+
+        return new_dict
+    
+    @staticmethod
+    def parse_adcs_2_vec(data_dict):
+        vector_data = data_dict['a__uint8__adcsState']
+
+        new_dict = {
+            'Attitude_Estimation_Mode': 0,
+            'Control_Mode': 0,
+            'ADCS_Run_Mode': 0,
+            'ASGP4_Mode': 0,
+            'CubeControl_Signal_Enabled': 0,
+            'CubeControl_Motor_Enabled': 0,
+            'CubeSense1_Enabled': 0,
+            'CubeSense2_Enabled': 0,
+            'CubeWheel1_Enabled': 0,
+            'CubeWheel2_Enabled': 0,
+            'CubeWheel3_Enabled': 0,
+            'CubeStar_Enabled': 0,
+            'GPS_Receiver_Enabled': 0,
+            'GPS_LNA_Power_Enabled': 0,
+            'Motor_Driver_Enabled': 0,
+            'Sun_is_Above_Local_Horizon': 0,
+            'CubeSense1_Communications_Error': 0,
+            'CubeSense2_Communications_Error': 0,
+            'CubeControl_Signal_Communications_Error': 0,
+            'CubeControl_Motor_Communications_Error': 0,
+            'CubeWheel1_Communications_Error': 0,
+            'CubeWheel2_Communications_Error': 0,
+            'CubeWheel3_Communications_Error': 0,
+            'CubeStar_Communications_Error': 0,
+            'Magnetometer_Range_Error': 0,
+            'Cam1_SRAM_Overcurrent_Detected': 0,
+            'Cam1_3V3_Overcurrent_Detected': 0,
+            'Cam1_Sensor_Busy_Error': 0,
+            'Cam1_Sensor_Detection_Error': 0,
+            'Sun_Sensor_Range_Error': 0,
+            'Cam2_SRAM_Overcurrent_Detected': 0,
+            'Cam2_3V3_Overcurrent_Detected': 0,
+            'Cam2_Sensor_Busy_Error': 0,
+            'Cam2_Sensor_Detection_Error': 0,
+            'Nadir_Sensor_Range_Error': 0,
+            'Rate_Sensor_Range_Error': 0,
+            'Wheel_Speed_Range_Error': 0,
+            'Coarse_Sun_Sensor_Error': 0,
+            'StarTracker_Match_Error': 0,
+            'StarTracker_Overcurrent_Detected': 0
+        }
+
+        byte_0 = vector_data[0]
+        byte_1 = vector_data[1]
+        byte_2 = vector_data[2]
+        byte_3 = vector_data[3]
+        byte_4 = vector_data[4]
+        byte_5 = vector_data[5]
+
+        # Bits 0-7
+        # 01 00 10 11
+        new_dict['Attitude_Estimation_Mode'] = (byte_0 >> 4) & 0b1111   # 01 00
+        new_dict['Control_Mode'] = byte_0 & 0b1111                      # 10 11    
+        
+        # Bits 8-15
+        # 01 00 10 11
+        new_dict['ADCS_Run_Mode'] = (byte_1 >> 6) & 0b11                # 01
+        new_dict['ASGP4_Mode'] = (byte_1 >> 4) & 0b11                   # 00
+        new_dict['CubeControl_Signal_Enabled'] = (byte_1 >> 3) & 0b1    # 1
+        new_dict['CubeControl_Motor_Enabled'] = (byte_1 >> 2) & 0b1     # 0
+        new_dict['CubeSense1_Enabled'] = (byte_1 >> 1) & 0b1            # 1
+        new_dict['CubeSense2_Enabled'] = byte_1 & 0b1                   # 1
+
+        # Bits 16-23
+        # 01 00 10 11
+        new_dict['CubeWheel1_Enabled'] = (byte_2 >> 7) & 0b1        # 0
+        new_dict['CubeWheel2_Enabled'] = (byte_2 >> 6) & 0b1        # 1
+        new_dict['CubeWheel3_Enabled'] = (byte_2 >> 5) & 0b1        # 0
+        new_dict['CubeStar_Enabled'] = (byte_2 >> 4) & 0b1          # 0
+        new_dict['GPS_Receiver_Enabled'] = (byte_2 >> 3) & 0b1      # 1
+        new_dict['GPS_LNA_Power_Enabled'] = (byte_2 >> 2) & 0b1     # 0
+        new_dict['Motor_Driver_Enabled'] = (byte_2 >> 1) & 0b1      # 1
+        new_dict['Sun_is_Above_Local_Horizon'] = byte_2 & 0b1       # 1
+
+        # Bits 24-31
+        # 01 00 10 11
+        new_dict['CubeSense1_Communications_Error'] = (byte_3 >> 7) & 0b1           # 0
+        new_dict['CubeSense2_Communications_Error'] = (byte_3 >> 6) & 0b1           # 1
+        new_dict['CubeControl_Signal_Communications_Error'] = (byte_3 >> 5) & 0b1   # 0
+        new_dict['CubeControl_Motor_Communications_Error'] = (byte_3 >> 4) & 0b1    # 0
+        new_dict['CubeWheel1_Communications_Error'] = (byte_3 >> 3) & 0b1           # 1
+        new_dict['CubeWheel2_Communications_Error'] = (byte_3 >> 2) & 0b1           # 0
+        new_dict['CubeWheel3_Communications_Error'] = (byte_3 >> 1) & 0b1           # 1
+        new_dict['CubeStar_Communications_Error'] = byte_3 & 0b1                    # 1
+
+        # Bits 32-39
+        # 01 00 10 11
+        new_dict['Magnetometer_Range_Error'] = (byte_4 >> 7) & 0b1          # 0
+        new_dict['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1    # 1
+        new_dict['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 5) & 0b1     # 0
+        new_dict['Cam1_Sensor_Busy_Error'] = (byte_4 >> 4) & 0b1            # 0
+        new_dict['Cam1_Sensor_Detection_Error'] = (byte_4 >> 3) & 0b1       # 1
+        new_dict['Sun_Sensor_Range_Error'] = (byte_4 >> 2) & 0b1            # 0
+        new_dict['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    # 1
+        new_dict['Cam2_3V3_Overcurrent_Detected'] = byte_4 & 0b1            # 1
+
+        # Bits 40-47
+        # 01 00 10 11
+        new_dict['Cam2_Sensor_Busy_Error'] = (byte_5 >> 7) & 0b1        # 0
+        new_dict['Cam2_Sensor_Detection_Error'] = (byte_5 >> 6) & 0b1   # 1
+        new_dict['Nadir_Sensor_Range_Error'] = (byte_5 >> 5) & 0b1      # 0
+        new_dict['Rate_Sensor_Range_Error'] = (byte_5 >> 4) & 0b1       # 0
+        new_dict['Wheel_Speed_Range_Error'] = (byte_5 >> 3) & 0b1       # 1
+        new_dict['Coarse_Sun_Sensor_Error'] = (byte_5 >> 2) & 0b1       # 0
+        new_dict['StarTracker_Match_Error'] = (byte_5 >> 1) & 0b1       # 1
+        new_dict['StarTracker_Overcurrent_Detected'] = byte_5 & 0b1     # 1
+
+        return new_dict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     # Creates CSV file and writes the headers
     @staticmethod
     def write_header(parsed_data, output_filepath):
