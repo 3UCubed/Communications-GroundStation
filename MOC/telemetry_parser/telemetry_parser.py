@@ -231,6 +231,8 @@ class CSVFiles:
             data_dict = CSVFiles.parse_adcs_1_vec(data_dict)
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_2":
             data_dict = CSVFiles.parse_adcs_2_vec(data_dict)
+        elif CSVFiles.dc_entries_dict[msg.msg_type] == "AOCS_CNTRL_TLM":
+            data_dict = CSVFiles.parse_aocs_cntrl_tlm_vec(data_dict)
         
         return data_dict
     
@@ -389,6 +391,43 @@ class CSVFiles:
         new_dict['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  # 0
 
         return new_dict
+
+
+
+    @staticmethod
+    def parse_aocs_cntrl_tlm_vec(data_dict):
+        new_dict = {}
+        new_keys = []
+        new_values = []
+        print(data_dict)
+        for key, value in data_dict.items():
+            if key == 'uint16__adcsErrFlags':
+                new_keys.append('adcsErrFlags')
+                new_values.append(value)
+            elif key == 'int32__estAngRateNorm':
+                new_keys.append('estAngRateNorm')
+                new_values.append(value)
+            elif key == 'a__int32__estAngRateVec':
+                new_keys += ['estAngRateVec_X', 'estAngRateVec_Y', 'estAngRateVec_Z']
+                new_values += [value[0], value[1], value[2]]
+            elif key == 'a__int32__estAttAngles':
+                new_keys += ['estAttAngles_Roll', 'estAttAngles_Pitch', 'estAttAngles_Yaw']
+                new_values += [value[0], value[1], value[2]]
+            elif key == 'a__int16__measWheelSpeed':
+                new_keys += ['measWheelSpeed_X', 'measWheelSpeed_Y', 'measWheelSpeed_Z']
+                new_values += [value[0], value[1], value[2]]
+
+            new_dict.update({key: value for key, value in zip(new_keys, new_values)})
+        print(new_dict)
+        return new_dict
+
+
+
+
+
+
+
+
 
     # Creates CSV file and writes the headers
     @staticmethod
