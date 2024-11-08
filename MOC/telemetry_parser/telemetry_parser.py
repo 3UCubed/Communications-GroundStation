@@ -9,6 +9,10 @@ from dependencies import datacache
 import csv
 import glob
 
+# Variable controlling how many tasks are in the TaskStats vector
+NUM_TASKS = 30
+
+
 # -----------------------------------------------------------------------------------------------------------
 def unixtime_to_readable_date(unix_timestamp: int) -> str:
     date_string = ""
@@ -222,7 +226,7 @@ class CSVFiles:
     # Parses message data using datacache parser
     @staticmethod
     def parse_msg_data(msg):
-        (data, length) = datacache.dc_parser().parse_by_id(msg.msg_type, msg.data)
+        (data, length) = datacache.dc_parser(NUM_TASKS).parse_by_id(msg.msg_type, msg.data)
         data_dict = data.__dict__
 
         if CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_0":
@@ -237,8 +241,8 @@ class CSVFiles:
             data_dict = CSVFiles.parse_eps_3_vec(data_dict)
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "EPS_4": # Hasn't been tested, tlm files don't have this right now
             data_dict = CSVFiles.parse_eps_4_vec(data_dict)
-        elif CSVFiles.dc_entries_dict[msg.msg_type] == "TaskStats":
-            data_dict = CSVFiles.parse_taskstats_vec(data_dict)
+        # elif CSVFiles.dc_entries_dict[msg.msg_type] == "TaskStats":
+        #     data_dict = CSVFiles.parse_taskstats_vec(data_dict)
 
         return data_dict
     
@@ -539,7 +543,7 @@ class CSVFiles:
 
     @staticmethod
     def parse_taskstats_vec(data_dict):
-        print(data_dict)
+        print(f"{len(data_dict['a__int16__taskStackMaxUnusedSize'])} {data_dict}")
 
 
     # Creates CSV file and writes the headers

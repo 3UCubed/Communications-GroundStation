@@ -20,7 +20,9 @@
 from SerDesHelpers import *
 
 class dc_parser:
-    def __init__(self):
+    NUM_TASKS = 0
+    def __init__(self, num_tasks):
+        dc_parser.NUM_TASKS = num_tasks
         self.dc_entries_dict = {}
 
         self.dc_entries_dict[0x00000010] = dc_parser.struct_OBC_0
@@ -898,7 +900,7 @@ class dc_parser:
     class struct_TaskStats:
         def __init__(self, a__int16__taskStackMaxUnusedSize = []):
             self.a__int16__taskStackMaxUnusedSize = a__int16__taskStackMaxUnusedSize
-    
+            
         def serialize(self):
             result = bytearray()
     
@@ -911,7 +913,7 @@ class dc_parser:
             resultInstance = dc_parser.struct_TaskStats()
     
             currentPos = pos
-            (resultInstance.a__int16__taskStackMaxUnusedSize, bytesProcessed) = SerDesHelpers.serdesType_basicArray.deserialize("int16", data, currentPos, 30)
+            (resultInstance.a__int16__taskStackMaxUnusedSize, bytesProcessed) = SerDesHelpers.serdesType_basicArray.deserialize("int16", data, currentPos, dc_parser.NUM_TASKS)
             currentPos += bytesProcessed
     
             # tuple[1] shall contain the total number of bytes processed by the function
@@ -919,7 +921,7 @@ class dc_parser:
     
         @staticmethod
         def getSize():
-            return 60
+            return dc_parser.NUM_TASKS * 2
     
     class struct_SSP_3:
         def __init__(self, uint16__sunDataMain = 0, uint16__sunDataExt = 0, int16__tempMCU = 0, int16__tempMain = 0, int16__tempExt1 = 0, int16__tempExt2 = 0):

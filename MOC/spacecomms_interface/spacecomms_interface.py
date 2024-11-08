@@ -36,7 +36,7 @@ def download_file(file_name: str):
     with open(file_path, "wb") as file:
         file.write(serialized_response)
     
-    logging.info("File {0} written to current directory".format(file_name))
+    print(f"File {file_name} written to downloaded_files directory")
     return status
 
 # Initializing the radio
@@ -71,14 +71,14 @@ def download_telemetry_files():
         status = download_file(file)
         retries = 0
 
-        while retries <= 10 and status == 0:
+        while retries < 10 and status == 0:
             retries += 1
             print(f"Problem downloading file, retry #{retries}")
             time.sleep(5)
             status = download_file(file)
 
         if status == 0:
-            missed_files += file
+            missed_files.append(file)
 
         current_file_number += 1
         end_time = time.perf_counter()
