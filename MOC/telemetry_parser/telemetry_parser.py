@@ -8,7 +8,7 @@ from dependencies import cobs
 from dependencies import datacache
 import csv
 import glob
-
+from itertools import islice
 # Variable controlling how many tasks are in the TaskStats vector
 NUM_TASKS = 30
 
@@ -241,8 +241,8 @@ class CSVFiles:
             data_dict = CSVFiles.parse_eps_3_vec(data_dict)
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "EPS_4": # Hasn't been tested, tlm files don't have this right now
             data_dict = CSVFiles.parse_eps_4_vec(data_dict)
-        # elif CSVFiles.dc_entries_dict[msg.msg_type] == "TaskStats":
-        #     data_dict = CSVFiles.parse_taskstats_vec(data_dict)
+        elif CSVFiles.dc_entries_dict[msg.msg_type] == "TaskStats":
+            data_dict = CSVFiles.parse_taskstats_vec(data_dict)
 
         return data_dict
     
@@ -543,8 +543,58 @@ class CSVFiles:
 
     @staticmethod
     def parse_taskstats_vec(data_dict):
-        print(f"{len(data_dict['a__int16__taskStackMaxUnusedSize'])} {data_dict}")
+        new_dict = {
+            'TASK_MONITOR_TASK': 0,
+            'TASK_MONITOR_EXEH_PERSISTOR': 0,
+            'TASK_MONITOR_APP_TASK': 0,
+            'TASK_MONITOR_SERVICES': 0,
+            'TASK_MONITOR_SD_MANAGER': 0,
+            'TASK_INSTRUMENTS': 0,
+            'TASK_MONITOR_S_X_BAND': 0,
+            'TASK_MONITOR_CUBEADCS': 0,
+            'TASK_MONITOR_CUBEADCS_FHANDL': 0,
+            'TASK_MONITOR_GNSS': 0,
+            'TASK_PAYLOAD_SCHEDULER': 0,
+            'TASK_TELEMETRY': 0,
+            'TASK_TELEMETRY_FILE_SINK': 0,
+            'TASK_MONITOR_SP': 0,
+            'TASK_MACDRV_DISPATCHER': 0,
+            'TASK_MACTL_DISPATCHER': 0,
+            'TASK_FWUPD_HANDLER': 0,
+            'TASK_ESSA_SP_HANDLER': 0,
+            'TASK_NVM': 0,
+            'TASK_DATACACHE': 0,
+            'TASK_ADCS_TLM': 0,
+            'TASK_CONOPS_PERIODIC_EV': 0,
+            'TASK_MONITOR_PAYLOAD_CTRL': 0,
+            'TASK_BEACONS': 0,
+            'TASK_EPS_CTRL': 0,
+            'TASK_EPS_I': 0,
+            'TASK_EPS_II': 0,
+            'TASK_EPS_M': 0,
+            'TASK_SYS_CLOCK': 0,
+            'TASK_MONITOR_ES_ADCS': 0,
+            'TASK_ACTUATOR_CONTROL_SERVICE': 0,
+            'TASK_SDS': 0,
+            'TASK_AOCS_CNTRL': 0,
+            'TASK_SXBAND_SCHED': 0,
+            'TASK_CRYPTO_SRV': 0,
+            'TASK_MONITOR_TASKS_NUMBER': 0
+        }
 
+        vector_data = data_dict['a__int16__taskStackMaxUnusedSize']
+
+        if NUM_TASKS == 30:
+            for key, value in zip(islice(new_dict.keys(), NUM_TASKS), vector_data):
+                new_dict[key] = value
+            new_dict = dict(islice(new_dict.items(), NUM_TASKS))
+        elif NUM_TASKS == 36:
+            for key, value in zip(new_dict.keys(), vector_data):
+                new_dict[key] = value
+        else:
+            return data_dict
+        
+        return new_dict
 
     # Creates CSV file and writes the headers
     @staticmethod

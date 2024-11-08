@@ -1,15 +1,15 @@
-#  ---------------------------------------------------------------------------------------------------------------------- #
-# Author: Jared Morrison                                                                                                  #
-# Description: Parses beacons from a .bin file.                                                                           #
-# Date: November 5th, 2024                                                                                                #
-#                                                                                                                         #
-# Beacon Structure:                                                                                                       #
-# | BeaconHeader | BeaconMsgHeader | Beacon Data | BeaconMsgHeader | Beacon Data | ... 77 bytes                           #
-#                                                                                                                         #
-# Note:                                                                                                                   #
-# Each beacon only has a single BeaconHeader. Each message within that beacon has its own BeaconMsgHeader and data. Each  #
-# flag attribute (flag_a, flag_b, etc.) are currently unknown bytes in both the Beacon Header and Beacon Message Header.  #
-# ----------------------------------------------------------------------------------------------------------------------- #
+#  ---------------------------------------------------------------------------------------------------------------------- 
+# Author: Jared Morrison                                                                                                  
+# Description: Parses beacons from a .bin file.                                                                           
+# Date: November 5th, 2024                                                                                                
+#                                                                                                                         
+# Beacon Structure:                                                                                                       
+# | BeaconHeader | BeaconMsgHeader | Beacon Data | BeaconMsgHeader | Beacon Data | ... 77 bytes                           
+#                                                                                                                         
+# Note:                                                                                                                   
+# Each beacon only has a single BeaconHeader. Each message within that beacon has its own BeaconMsgHeader and data. Each  
+# flag attribute (flag_a, flag_b, etc.) are currently unknown bytes in both the Beacon Header and Beacon Message Header.  
+# ----------------------------------------------------------------------------------------------------------------------- 
 
 
 import os
