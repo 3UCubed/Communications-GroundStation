@@ -1,6 +1,35 @@
 # Description
 Multiple scripts that can be used to parse beacons, communicate with the SpaceComms terminal, and parse telemetry files.
 
+# Quick-Start
+Ensure SpaceComms is running
+
+Open a terminal in your documents directory, or wherever you keep your git repos
+
+Clone the repository: ```git clone https://github.com/3UCubed/Communications-GroundStation.git```
+
+Change directory into the repo: ```cd Communications-GroundStation/```
+
+## I want to... Download all telemetry files from the OBC
+Change directory into spacecomms_interface: ```cd MOC/spacecomms_interface/```
+
+Start downloading all .TLM files: ```python3 spacecomms_interface.py 2```
+
+## I want to... Parse all of the telemetry files I downloaded
+Copy all .TLM files from MOC/spacecomms_interface/downloaded_files
+
+Paste all .TLM files you want to parse into MOC/telemetry_parser/tlm_files
+
+Change directory into telemetry_parser: ```cd MOC/telemetry_parser/```
+
+Start parsing your .TLM files: ```python3 telemetry_parser.py```
+
+## I want to... Parse beacon data in real-time
+Change directory into realtime_beacon_parser: ```cd MOC/beacon_parser/realtime_beacon_parser/```
+
+Start listening for beacons and parsing: ```python3 realtime_beacon_parser.py```
+
+
 # Directory Structure
 ```
 MOC/
