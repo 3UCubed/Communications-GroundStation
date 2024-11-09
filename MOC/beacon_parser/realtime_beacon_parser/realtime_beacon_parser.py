@@ -83,8 +83,13 @@ class BeaconMsg:
         self.partial = False
 
     def parse(self, data: bytes):
+            
         for byte in data:
             self.data.append(byte)
+        
+        if self.header.dc_id == 0x00000011:
+            print(self.data)
+
     
     def __str__(self):
         str_repr = f"\n\tBeaconMsgHeader> DC ID: {self.header.dc_id} | Flag D: {hex(self.header.flag_d)} | Flag E: {hex(self.header.flag_e)} | MSG Length: {hex(self.header.msg_length)}\n"
