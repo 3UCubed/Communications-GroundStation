@@ -75,6 +75,8 @@ class BeaconMsgHeader:
             return BeaconMsgHeader.MSG_HEADER_SIZE
         else:
             return 0
+    
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------- #
@@ -92,8 +94,8 @@ class BeaconMsg:
             self.data.append(byte)
     
     def __str__(self):
-        str_repr = f"\n\tBeaconMsgHeader> DC ID: {self.header.dc_id} | Flag D: {hex(self.header.flag_d)} | Flag E: {hex(self.header.flag_e)} | MSG Length: {hex(self.header.msg_length)}\n"
-        str_repr += f"\t\tBeaconMsgData> {self.data}"
+        str_repr = f"\nBeaconMsgHeader> DC ID: {self.header.dc_id} | Flag D: {hex(self.header.flag_d)} | Flag E: {hex(self.header.flag_e)} | MSG Length: {hex(self.header.msg_length)}\n"
+        str_repr += "BeaconMsgData>\n" + "\n".join(f"{str(key) + ':':<40} {value}" for key, value in self.data.items())
         return str_repr
 
 
@@ -209,7 +211,222 @@ class BeaconFile:
             msg_index += 1
         self.msg_list = fixed_msg_list
 
+    def label_data(self):
+        labeled_data = {}
 
+        for i, msg in enumerate(self.msg_list):
+            if msg.header.dc_id == "OBC_0":
+                labeled_data = BeaconFile.parse_obc_0(msg.data)
+            elif msg.header.dc_id == "ADCS_0":
+                labeled_data = BeaconFile.parse_adcs_0(msg.data)
+            elif msg.header.dc_id == "ADCS_1":
+                labeled_data = BeaconFile.parse_adcs_1(msg.data)
+            elif msg.header.dc_id == "ADCS_2":
+                labeled_data = BeaconFile.parse_adcs_2(msg.data)
+            elif msg.header.dc_id == "EPS_0":
+                labeled_data = BeaconFile.parse_eps_0(msg.data)
+            elif msg.header.dc_id == "SSP_0" or msg.header.dc_id == "SSP_1" or msg.header.dc_id == "SSP_2":
+                labeled_data = BeaconFile.parse_ssp(msg.data)
+            elif msg.header.dc_id == "AOCS_CNTRL_TLM":
+                labeled_data = BeaconFile.parse_aocs_cntrl_tlm(msg.data)
+            elif msg.header.dc_id == "EPS_1":
+                labeled_data = BeaconFile.parse_eps_1(msg.data)
+            else:
+                labeled_data = BeaconFile.parse_other(msg.data)
+
+            self.msg_list[i].data = labeled_data
+
+    @staticmethod
+    def parse_other(data: bytes):
+        labeled_data = {}
+        for key, value in enumerate(data):
+            labeled_data[key] = value
+        return labeled_data
+
+    @staticmethod
+    def parse_obc_0(data: bytes):
+        labeled_data = {}
+
+        labeled_data['opMode'] = data[0]
+        labeled_data['upTime'] = int.from_bytes(data[1:5], byteorder='little')
+        labeled_data['totalResetCount'] = int.from_bytes(data[5:7], byteorder='little')
+        labeled_data['resetReasonBitField'] = int.from_bytes(data[7:9], byteorder='little')
+        labeled_data['payloadModesStatus'] = int.from_bytes(data[9:11], byteorder='little')
+
+        return labeled_data
+
+
+    @staticmethod
+    def parse_adcs_0(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        data_keys = [
+            'magFieldVec_X', 'magFieldVec_Y', 'magFieldVec_Z',
+            'coarseSunVec_X', 'coarseSunVec_Y', 'coarseSunVec_Z',
+            'fineSunVec_X', 'fineSunVec_Y', 'fineSunVec_Z',
+            'nadirVec_X', 'nadirVec_Y', 'nadirVec_Z',
+            'angRateVec_X', 'angRateVec_Y', 'angRateVec_Z',
+            'wheelSpeedArr_X', 'wheelSpeedArr_Y', 'wheelSpeedArr_Z'
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(data_keys, shifted_data):
+            labeled_data[key] = value
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_adcs_1(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        data_keys = [
+            'estQSet_Q1', 'estQSet_Q2', 'estQSet_Q3',
+            'estQSet_X', 'estQSet_Y', 'estQSet_Z'
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(data_keys, shifted_data):
+            labeled_data[key] = value
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_adcs_2(data: bytes):
+        labeled_data = {}
+        byte_0 = data[0]
+        byte_1 = data[1]
+        byte_2 = data[2]
+        byte_3 = data[3]
+        byte_4 = data[4]
+        byte_5 = data[5]
+
+        # Bits 0-7
+        # 01 00 10 11
+        labeled_data['Attitude_Estimation_Mode'] = byte_0 & 0b1111  # 10 11
+        labeled_data['Control_Mode'] = (byte_0 >> 4) & 0b1111       # 01 00    
+        
+        # Bits 8-15
+        # 01 00 10 11
+        labeled_data['ADCS_Run_Mode'] = byte_1 & 0b1                        # 1
+        labeled_data['ASGP4_Mode'] = (byte_1 >> 1) & 0b1                    # 1
+        labeled_data['CubeControl_Signal_Enabled'] = (byte_1 >> 2) & 0b1    # 0
+        labeled_data['CubeControl_Motor_Enabled'] = (byte_1 >> 3) & 0b1     # 1
+        labeled_data['CubeSense1_Enabled'] = (byte_1 >> 4) & 0b11           # 00
+        labeled_data['CubeSense2_Enabled'] = (byte_1 >> 6) & 0b11           # 01
+
+        # Bits 16-23
+        # 01 00 10 11
+        labeled_data['CubeWheel1_Enabled'] = byte_2 & 0b1                   # 1
+        labeled_data['CubeWheel2_Enabled'] = (byte_2 >> 1) & 0b1            # 1
+        labeled_data['CubeWheel3_Enabled'] = (byte_2 >> 2) & 0b1            # 0
+        labeled_data['CubeStar_Enabled'] = (byte_2 >> 3) & 0b1              # 1
+        labeled_data['GPS_Receiver_Enabled'] = (byte_2 >> 4) & 0b1          # 0
+        labeled_data['GPS_LNA_Power_Enabled'] = (byte_2 >> 5) & 0b1         # 0
+        labeled_data['Motor_Driver_Enabled'] = (byte_2 >> 6) & 0b1          # 1
+        labeled_data['Sun_is_Above_Local_Horizon'] = (byte_2 >> 7) & 0b1    # 0
+
+        # Bits 24-31
+        # 01 00 10 11
+        labeled_data['CubeSense1_Communications_Error'] = byte_3 & 0b1                  # 1
+        labeled_data['CubeSense2_Communications_Error'] = (byte_3 >> 1) & 0b1           # 1
+        labeled_data['CubeControl_Signal_Communications_Error'] = (byte_3 >> 2) & 0b1   # 0
+        labeled_data['CubeControl_Motor_Communications_Error'] = (byte_3 >> 3) & 0b1    # 1
+        labeled_data['CubeWheel1_Communications_Error'] = (byte_3 >> 4) & 0b1           # 0
+        labeled_data['CubeWheel2_Communications_Error'] = (byte_3 >> 5) & 0b1           # 0
+        labeled_data['CubeWheel3_Communications_Error'] = (byte_3 >> 6) & 0b1           # 1
+        labeled_data['CubeStar_Communications_Error'] = (byte_3 >> 7) & 0b1             # 0
+
+        # Bits 32-39
+        # 01 00 10 11
+        labeled_data['Magnetometer_Range_Error'] = byte_4 & 0b1                 # 1
+        labeled_data['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    # 1
+        labeled_data['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 2) & 0b1     # 0
+        labeled_data['Cam1_Sensor_Busy_Error'] = (byte_4 >> 3) & 0b1            # 1
+        labeled_data['Cam1_Sensor_Detection_Error'] = (byte_4 >> 4) & 0b1       # 0
+        labeled_data['Sun_Sensor_Range_Error'] = (byte_4 >> 5) & 0b1            # 0
+        labeled_data['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1    # 1
+        labeled_data['Cam2_3V3_Overcurrent_Detected'] = (byte_4 >> 7) & 0b1     # 0
+
+        # Bits 40-47
+        # 01 00 10 11
+        labeled_data['Cam2_Sensor_Busy_Error'] = byte_5 & 0b1                   # 1
+        labeled_data['Cam2_Sensor_Detection_Error'] = (byte_5 >> 1) & 0b1       # 1
+        labeled_data['Nadir_Sensor_Range_Error'] = (byte_5 >> 2) & 0b1          # 0
+        labeled_data['Rate_Sensor_Range_Error'] = (byte_5 >> 3) & 0b1           # 1
+        labeled_data['Wheel_Speed_Range_Error'] = (byte_5 >> 4) & 0b1           # 0
+        labeled_data['Coarse_Sun_Sensor_Error'] = (byte_5 >> 5) & 0b1           # 0
+        labeled_data['StarTracker_Match_Error'] = (byte_5 >> 6) & 0b1           # 1
+        labeled_data['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  # 0
+
+        return labeled_data
+
+
+    @staticmethod
+    def parse_eps_0(data: bytes):
+        labeled_data = {}
+
+        labeled_data['battEnergy'] = int.from_bytes(data[0:8], byteorder='little')
+        labeled_data['battCharge'] = int.from_bytes(data[8:16], byteorder='little')
+        labeled_data['battChargeCapacity'] = int.from_bytes(data[16:24], byteorder='little')
+        labeled_data['battPercent'] = int.from_bytes(data[24:32], byteorder='little')
+        labeled_data['battVoltage'] = int.from_bytes(data[32:36], byteorder='little')
+        labeled_data['battCurrent'] = int.from_bytes(data[36:40], byteorder='little')
+        labeled_data['battTemperature'] = int.from_bytes(data[40:44], byteorder='little')
+
+        return labeled_data
+
+    @staticmethod
+    def parse_ssp(data: bytes):
+        # All SSP's can be parsed exactly the same way
+        labeled_data = {}
+        shifted_data = []
+        new_labels = ['sunDataMain', 'sunDataExt', 'tempMCU', 'tempMain', 'tempExt1', 'temptExt2']
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_aocs_cntrl_tlm(data: bytes):
+        labeled_data = {}
+
+        labeled_data['adcsErrFlags'] = int.from_bytes(data[0:2], byteorder='little')
+        labeled_data['estAngRateNorm'] = int.from_bytes(data[2:6], byteorder='little')
+        labeled_data['estAngRateVec_X'] = int.from_bytes(data[6:10], byteorder='little')
+        labeled_data['estAngRateVec_Y'] = int.from_bytes(data[10:14], byteorder='little')
+        labeled_data['estAngRateVec_Z'] = int.from_bytes(data[14:18], byteorder='little')
+        labeled_data['estAttAngles_Roll'] = int.from_bytes(data[18:22], byteorder='little')
+        labeled_data['estAttAngles_Pitch'] = int.from_bytes(data[22:26], byteorder='little')
+        labeled_data['estAttAngles_Yaw'] = int.from_bytes(data[26:30], byteorder='little')
+        labeled_data['measWheelSpeed_X'] = int.from_bytes(data[30:32], byteorder='little')
+        labeled_data['measWheelSpeed_Y'] = int.from_bytes(data[32:34], byteorder='little')
+        labeled_data['measWheelSpeed_Z'] = int.from_bytes(data[34:36], byteorder='little')
+
+        return labeled_data
+    
+    @staticmethod
+    def parse_eps_1(data: bytes):
+        labeled_data = {}
+
+        labeled_data['battCapacity'] = int.from_bytes(data[0:4], byteorder='little')
+        labeled_data['battVoltage'] = int.from_bytes(data[4:8], byteorder='little')
+        labeled_data['battCurrent'] = int.from_bytes(data[8:12], byteorder='little')
+        labeled_data['battTemperature'] = int.from_bytes(data[12:16], byteorder='little')
+
+        return labeled_data
+    
+    #TODO: EPS 2
+
+
+            
 
 # ----------------------------------------------------------------------------------------------------------------------- #
 # Main function
@@ -219,6 +436,7 @@ if __name__ == "__main__":
     beacons = BeaconFile(filepath)
     beacons.parse_file()
     beacons.handle_partial_msg()
+    beacons.label_data()
     for msg in beacons.msg_list:
         print(msg)
 
