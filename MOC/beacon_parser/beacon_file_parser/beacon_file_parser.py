@@ -161,7 +161,7 @@ class BeaconFile:
             current_file_pos = file.tell()
             
             # Get all messages from current beacon
-            while current_file_pos < (BeaconFile.BEACON_SIZE * current_beacon_number):
+            while current_file_pos < BeaconFile.BEACON_SIZE * current_beacon_number:
                 # Create new message object for each message in the current beacon
                 beacon_msg = BeaconMsg()
 
@@ -170,6 +170,11 @@ class BeaconFile:
                 
                 # Update current file position
                 current_file_pos = file.tell()
+
+                if beacon_msg.header.dc_id == 'Unknown':
+                    file.seek(BeaconFile.BEACON_SIZE * current_beacon_number)
+                    current_file_pos = file.tell()
+                    continue
 
                 # If the message is split, just read until the end of the current beacon
                 if (beacon_msg.header.msg_length + current_file_pos > (BeaconFile.BEACON_SIZE * current_beacon_number)):
