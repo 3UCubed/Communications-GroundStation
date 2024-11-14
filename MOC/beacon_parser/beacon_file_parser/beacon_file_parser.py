@@ -14,6 +14,7 @@
 
 import os
 from struct import unpack_from
+from itertools import islice
 
 
 # ----------------------------------------------------------------------------------------------------------------------- #
@@ -231,6 +232,18 @@ class BeaconFile:
                 labeled_data = BeaconFile.parse_aocs_cntrl_tlm(msg.data)
             elif msg.header.dc_id == "EPS_1":
                 labeled_data = BeaconFile.parse_eps_1(msg.data)
+            elif msg.header.dc_id == "EPS_2":
+                labeled_data = BeaconFile.parse_eps_2(msg.data)
+            elif msg.header.dc_id == "EPS_3":
+                labeled_data = BeaconFile.parse_eps_3(msg.data)
+            elif msg.header.dc_id == "EPS_4":
+                labeled_data = BeaconFile.parse_eps_4(msg.data)
+            elif msg.header.dc_id == "EPS_5":
+                labeled_data = BeaconFile.parse_eps_5(msg.data)
+            elif msg.header.dc_id == "EPS_6":
+                labeled_data = BeaconFile.parse_eps_6(msg.data)
+            elif msg.header.dc_id == "TaskStats":
+                labeled_data = BeaconFile.parse_taskstats(msg.data)
             else:
                 labeled_data = BeaconFile.parse_other(msg.data)
 
@@ -423,7 +436,234 @@ class BeaconFile:
 
         return labeled_data
     
-    #TODO: EPS 2
+    @staticmethod
+    def parse_eps_2(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'VOLT_BRDSUP',
+            'TEMP_MCU',
+            'VIP_INPUT_Voltage',
+            'VIP_INPUT_Current',
+            'VIP_INPUT_Power',
+            'STAT_CH_ON',
+            'STAT_CH_OCF',
+            'VIP_Voltage_VD0',
+            'VIP_Current_VD0',
+            'VIP_Voltage_VD4',
+            'VIP_Current_VD4',
+            'VIP_Voltage_VD6',
+            'VIP_Current_VD6',
+            'VIP_Voltage_VD7',
+            'VIP_Current_VD7',
+            'VIP_Voltage_VD8',
+            'VIP_Current_VD8',
+            'VIP_Voltage_VD9',
+            'VIP_Current_VD9',
+            'VIP_Voltage_VD10',
+            'VIP_Current_VD10',
+            'VIP_Voltage_VD11',
+            'VIP_Current_VD11'
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_eps_3(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'VOLT_BRDSUP',
+            'TEMP_MCU',
+            'VIP_INPUT_Voltage',
+            'VIP_INPUT_Current',
+            'VIP_INPUT_Power',
+            'STAT_BU',
+            'VIP_BP_INPUT_Voltage_1',
+            'VIP_BP_INPUT_Voltage_2',
+            'VIP_BP_INPUT_Current_1',
+            'VIP_BP_INPUT_Current_2',
+            'VIP_BP_INPUT_Power_1',
+            'VIP_BP_INPUT_Power_2',
+            'STAT_BP_1',
+            'STAT_BP_2',
+            'VOLT_CELL1_1',
+            'VOLT_CELL1_2',
+            'VOLT_CELL2_1',
+            'VOLT_CELL2_2',
+            'VOLT_CELL3_1',
+            'VOLT_CELL3_2',
+            'VOLT_CELL4_1',
+            'VOLT_CELL4_2',
+            'BAT_TEMP1_1',
+            'BAT_TEMP1_2',
+            'BAT_TEMP2_1',
+            'BAT_TEMP2_2',
+            'BAT_TEMP3_1',
+            'BAT_TEMP3_2',
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_eps_4(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'VOLT_BRDSUP',
+            'TEMP_MCU',
+            'VIP_OUTPUT_Voltage',
+            'VIP_OUTPUT_Current',
+            'VIP_OUTPUT_Power',
+            'VIP_CC_OUTPUT_Voltage_1',
+            'VIP_CC_OUTPUT_Voltage_2',
+            'VIP_CC_OUTPUT_Voltage_3',
+            'VIP_CC_OUTPUT_Voltage_4',
+            'VIP_CC_OUTPUT_Current_1',
+            'VIP_CC_OUTPUT_Current_2',
+            'VIP_CC_OUTPUT_Current_3',
+            'VIP_CC_OUTPUT_Current_4',
+            'VIP_CC_OUTPUT_Power_1',
+            'VIP_CC_OUTPUT_Power_2',
+            'VIP_CC_OUTPUT_Power_3',
+            'VIP_CC_OUTPUT_Power_4',
+            'CCx_VOLT_IN_MPPT_1',
+            'CCx_VOLT_IN_MPPT_2',
+            'CCx_VOLT_IN_MPPT_3',
+            'CCx_VOLT_IN_MPPT_4',
+            'CCx_CURR_IN_MPPT_1',
+            'CCx_CURR_IN_MPPT_2',
+            'CCx_CURR_IN_MPPT_3',
+            'CCx_CURR_IN_MPPT_4',
+            'CCx_VOLT_OU_MPPT_1',
+            'CCx_VOLT_OU_MPPT_2',
+            'CCx_VOLT_OU_MPPT_3',
+            'CCx_VOLT_OU_MPPT_4',
+            'CCx_CURR_OU_MPPT_1',
+            'CCx_CURR_OU_MPPT_2',
+            'CCx_CURR_OU_MPPT_3',
+            'CCx_CURR_OU_MPPT_4'
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+
+    @staticmethod
+    def parse_eps_5(data: bytes):
+        labeled_data = {}
+
+        labeled_data['MODE'] = data[0]
+        labeled_data['RESET_CAUSE'] = data[1]
+        labeled_data['UPTIME'] = int.from_bytes(data[2:6], byteorder='little')
+        labeled_data['ERROR'] = int.from_bytes(data[6:8], byteorder='little')
+        labeled_data['RC_CNT_PWRON'] = int.from_bytes(data[8:10], byteorder='little')
+        labeled_data['RC_CNT_WDG'] = int.from_bytes(data[10:12], byteorder='little')
+        labeled_data['RC_CNT_CMD'] = int.from_bytes(data[12:14], byteorder='little')
+        labeled_data['RC_CNT_MCU'] = int.from_bytes(data[14:16], byteorder='little')
+        labeled_data['RC_CNT_EMLOPO'] = int.from_bytes(data[16:18], byteorder='little')
+        labeled_data['UNIX_TIME'] = int.from_bytes(data[18:22], byteorder='little')
+        labeled_data['UNIX_YEAR'] = int.from_bytes(data[22:26], byteorder='little')
+        labeled_data['UNIX_MONTH'] = int.from_bytes(data[26:30], byteorder='little')
+        labeled_data['UNIX_DAY'] = int.from_bytes(data[30:34], byteorder='little')
+        labeled_data['UNIX_HOUR'] = int.from_bytes(data[34:38], byteorder='little')
+        labeled_data['UNIX_MINUTE'] = int.from_bytes(data[38:42], byteorder='little')
+        labeled_data['UNIX_SECOND'] = int.from_bytes(data[42:46], byteorder='little')
+
+        return labeled_data
+    
+    @staticmethod
+    def parse_eps_6(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'STAT_CH_ON',
+            'STAT_CH_OCF',
+            'OCF_CNT_CH00',
+            'OCF_CNT_CH04',
+            'OCF_CNT_CH06',
+            'OCF_CNT_CH07',
+            'OCF_CNT_CH08',
+            'OCF_CNT_CH09',
+            'OCF_CNT_CH10',
+            'OCF_CNT_CH11'
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_taskstats(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'TASK_MONITOR_TASK',
+            'TASK_MONITOR_EXEH_PERSISTOR',
+            'TASK_MONITOR_APP_TASK',
+            'TASK_MONITOR_SERVICES',
+            'TASK_MONITOR_SD_MANAGER',
+            'TASK_INSTRUMENTS',
+            'TASK_MONITOR_S_X_BAND',
+            'TASK_MONITOR_CUBEADCS',
+            'TASK_MONITOR_CUBEADCS_FHANDL',
+            'TASK_MONITOR_GNSS',
+            'TASK_PAYLOAD_SCHEDULER',
+            'TASK_TELEMETRY',
+            'TASK_TELEMETRY_FILE_SINK',
+            'TASK_MONITOR_SP',
+            'TASK_MACDRV_DISPATCHER',
+            'TASK_MACTL_DISPATCHER',
+            'TASK_FWUPD_HANDLER',
+            'TASK_ESSA_SP_HANDLER',
+            'TASK_NVM',
+            'TASK_DATACACHE',
+            'TASK_ADCS_TLM',
+            'TASK_CONOPS_PERIODIC_EV',
+            'TASK_MONITOR_PAYLOAD_CTRL',
+            'TASK_BEACONS',
+            'TASK_EPS_CTRL',
+            'TASK_EPS_I',
+            'TASK_EPS_II',
+            'TASK_EPS_M',
+            'TASK_SYS_CLOCK',
+            'TASK_MONITOR_ES_ADCS',
+            'TASK_ACTUATOR_CONTROL_SERVICE',
+            'TASK_SDS',
+            'TASK_AOCS_CNTRL',
+            'TASK_SXBAND_SCHED',
+            'TASK_CRYPTO_SRV',
+            'TASK_MONITOR_TASKS_NUMBER'
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(islice(new_labels, len(shifted_data)), shifted_data):
+            labeled_data[key] = value
+
+        return labeled_data
+
 
 
             
