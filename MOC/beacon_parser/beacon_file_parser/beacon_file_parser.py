@@ -226,7 +226,7 @@ class BeaconFile:
                 labeled_data = BeaconFile.parse_adcs_2(msg.data)
             elif msg.header.dc_id == "EPS_0":
                 labeled_data = BeaconFile.parse_eps_0(msg.data)
-            elif msg.header.dc_id == "SSP_0" or msg.header.dc_id == "SSP_1" or msg.header.dc_id == "SSP_2":
+            elif msg.header.dc_id == "SSP_0" or msg.header.dc_id == "SSP_1" or msg.header.dc_id == "SSP_2" or msg.header.dc_id == "SSP_3":
                 labeled_data = BeaconFile.parse_ssp(msg.data)
             elif msg.header.dc_id == "AOCS_CNTRL_TLM":
                 labeled_data = BeaconFile.parse_aocs_cntrl_tlm(msg.data)
@@ -244,6 +244,30 @@ class BeaconFile:
                 labeled_data = BeaconFile.parse_eps_6(msg.data)
             elif msg.header.dc_id == "TaskStats":
                 labeled_data = BeaconFile.parse_taskstats(msg.data)
+            elif msg.header.dc_id == "SENSOR_MAG_PRIMARY" or msg.header.dc_id == 'SENSOR_MAG_SECONDARY':
+                labeled_data = BeaconFile.parse_sensor_mag(msg.data)
+            elif msg.header.dc_id == "SENSOR_GYRO":
+                labeled_data = BeaconFile.parse_sensor_gyro(msg.data)
+            elif msg.header.dc_id == "SENSOR_COARSE_SUN":
+                labeled_data = BeaconFile.parse_sensor_coarse_sun(msg.data)
+            elif msg.header.dc_id == "ES_ADCS_SENSOR_MAG_PRIMARY" or msg.header.dc_id == "ES_ADCS_SENSOR_MAG_SECONDARY":
+                labeled_data = BeaconFile.parse_es_adcs_sensor_mag(msg.data)
+            elif msg.header.dc_id == "ES_ADCS_SENSOR_GYRO":
+                labeled_data = BeaconFile.parse_es_adcs_sensor_gyro(msg.data)
+            elif msg.header.dc_id == "ES_ADCS_SENSOR_CSS":
+                labeled_data = BeaconFile.parse_es_adcs_sensor_css(msg.data)
+            elif msg.header.dc_id == "ES_ADCS_ESTIMATES_BDOT":
+                labeled_data = BeaconFile.parse_es_adcs_estimates_bdot(msg.data)
+            elif msg.header.dc_id == "ES_ADCS_CONTROL_VALUES_MTQ":
+                labeled_data = BeaconFile.parse_es_adcs_control_values_mtq(msg.data)
+            elif msg.header.dc_id == "ConOpsFlags":
+                labeled_data = BeaconFile.parse_conops_flags(msg.data)
+            elif msg.header.dc_id == "AOCS_CNTRL_SYS_STATE":
+                labeled_data = BeaconFile.parse_aocs_cntrl_sys_state(msg.data)
+            elif msg.header.dc_id == "ADCS_3":
+                labeled_data = BeaconFile.parse_adcs_3(msg.data)
+            elif msg.header.dc_id == "ADCS_4":
+                labeled_data = BeaconFile.parse_adcs_4(msg.data)
             else:
                 labeled_data = BeaconFile.parse_other(msg.data)
 
@@ -664,9 +688,265 @@ class BeaconFile:
 
         return labeled_data
 
+    @staticmethod
+    def parse_sensor_mag(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'int32__MAG_X',
+            'int32__MAG_Y',
+            'int32__MAG_Z'
+        ]
 
+        for i in range(0, len(data), 4):
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
 
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+
+    @staticmethod
+    def parse_sensor_gyro(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'int32__GYRO_1',
+            'int32__GYRO_2',
+            'int32__GYRO_3'
+        ]
+
+        for i in range(0, len(data), 4):
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
             
+
+    @staticmethod
+    def parse_sensor_coarse_sun(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'CSS_PANEL_1',
+            'CSS_PANEL_2',
+            'CSS_PANEL_3',
+            'CSS_PANEL_4',
+            'CSS_PANEL_5',
+            'CSS_PANEL_6'
+        ]
+
+        for i in range(0, len(data), 4):
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+
+
+    @staticmethod
+    def parse_es_adcs_sensor_mag(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'MAG_X_CURRENT',
+            'MAG_Y_CURRENT',
+            'MAG_Z_CURRENT',
+            'MAG_X_PREVIOUS',
+            'MAG_Y_PREVIOUS',
+            'MAG_Z_PREVIOUS'
+        ]
+
+        for i in range(0, len(data), 4):
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_es_adcs_sensor_gyro(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'GYRO_X',
+            'GYRO_Y',
+            'GYRO_Z'
+        ]
+
+        for i in range(0, len(data), 4):
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_es_adcs_sensor_css(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'CSS_AXIS_X_PLUS',
+            'CSS_AXIS_Y_PLUS',
+            'CSS_AXIS_Z_PLUS',
+            'CSS_AXIS_X_MINUS',
+            'CSS_AXIS_Y_MINUS',
+            'CSS_AXIS_Z_MINUS'
+        ]
+
+        for i in range(0, len(data), 4):
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_es_adcs_estimates_bdot(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'MAG_FIELD_DERIV_X',
+            'MAG_FIELD_DERIV_Y',
+            'MAG_FIELD_DERIV_Z'
+        ]
+
+        for i in range(0, len(data), 4):
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_es_adcs_control_values_mtq(data: bytes):
+        labeled_data = {}
+        new_labels = [
+            'MAGTORQUE_VALUE_X',
+            'MAGTORQUE_VALUE_Y',
+            'MAGTORQUE_VALUE_Z'
+        ]
+
+        for key, value in zip(new_labels, data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_conops_flags(data: bytes):
+        labeled_data = {}
+        new_labels = [
+            'PAY_ERR',
+            'ADCS_ERR',
+            'DETUMB_COMPLETED'
+        ]
+
+        for key, value in zip(new_labels, data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_aocs_cntrl_sys_state(data: bytes):
+        labeled_data = {}
+        new_labels = [
+            'adcsSysState',
+            'adcsSysStateStatus',
+        ]
+
+        for key, value in zip(new_labels, data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_adcs_3(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'est_roll_angle',
+            'est_pitch_angle',
+            'est_yaw_angle',
+            'IGRF_MagField_X',
+            'IGRF_MagField_Y',
+            'IGRF_MagField_Z',
+            'Modelled_Sun_V_X',
+            'Modelled_Sun_V_Y',
+            'Modelled_Sun_V_Z',
+            'EstGyroBias_X',
+            'EstGyroBias_Y',
+            'EstGyroBias_Z',
+            'Innovation_Vec_X',
+            'Innovation_Vec_Y',
+            'Innovation_Vec_Z',
+            'Err_Q1',
+            'Err_Q2',
+            'Err_Q3',
+            'RMS_Q1',
+            'RMS_Q2',
+            'RMS_Q3',
+            'X_AngRate_Cov',
+            'Y_AngRate_Cov',
+            'Z_AngRate_Cov',
+            'X_Rate',
+            'Y_Rate',
+            'Z_Rate',
+            'Q0',
+            'Q1',
+            'Q2'
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+    
+    @staticmethod
+    def parse_adcs_4(data: bytes):
+        labeled_data = {}
+        shifted_data = []
+        new_labels = [
+            'Cubesense1_3V3_Current'
+            'Cubesense1_SRAM_Current'
+            'Cubesense2_3V3_Current'
+            'Cubesense2_SRAM_Current'
+            'CubeControl_3V3_Current'
+            'CubeControl_5V_Current'
+            'CubeControl_Vbat_Current'
+            'Wheel_1_Current'
+            'Wheel_2_Current'
+            'Wheel_3_Current'
+            'CubeStar_Current'
+            'MTQ_Current'
+            'CubeStar_MCU_Temp'
+            'ADCS_MCU_Temp'
+            'MTM_Temp'
+            'RMTM_Temp'
+            'X_Rate_Sensor_Temp'
+            'Y_Rate_Sensor_Temp'
+            'Z_Rate_Sensor_Temp'
+        ]
+
+        for i in range(0, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+
+        for key, value in zip(new_labels, shifted_data):
+            labeled_data[key] = value 
+        
+        return labeled_data
+
+
+
 
 # ----------------------------------------------------------------------------------------------------------------------- #
 # Main function
