@@ -164,7 +164,7 @@ class BeaconMsg:
     def parse_obc_0(data: bytes):
         labeled_data = {}
 
-        labeled_data['opMode'] = int.from_bytes(data[0], byteorder='little', signed=False)
+        labeled_data['opMode'] = data[0]
         labeled_data['upTime'] = int.from_bytes(data[1:5], byteorder='little', signed=False)
         labeled_data['totalResetCount'] = int.from_bytes(data[5:7], byteorder='little', signed=False)
         labeled_data['resetReasonBitField'] = int.from_bytes(data[7:9], byteorder='little', signed=False)
@@ -487,8 +487,8 @@ class BeaconMsg:
     def parse_eps_5(data: bytes):
         labeled_data = {}
 
-        labeled_data['MODE'] = int.from_bytes(data[0], byteorder='little', signed=False)
-        labeled_data['RESET_CAUSE'] = int.from_bytes(data[1], byteorder='little', signed=False)
+        labeled_data['MODE'] = data[0]
+        labeled_data['RESET_CAUSE'] = data[1]
         labeled_data['UPTIME'] = int.from_bytes(data[2:6], byteorder='little', signed=False)
         labeled_data['ERROR'] = int.from_bytes(data[6:8], byteorder='little', signed=False)
         labeled_data['RC_CNT_PWRON'] = int.from_bytes(data[8:10], byteorder='little', signed=False)
