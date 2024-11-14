@@ -164,11 +164,11 @@ class BeaconMsg:
     def parse_obc_0(data: bytes):
         labeled_data = {}
 
-        labeled_data['opMode'] = data[0]
-        labeled_data['upTime'] = int.from_bytes(data[1:5], byteorder='little')
-        labeled_data['totalResetCount'] = int.from_bytes(data[5:7], byteorder='little')
-        labeled_data['resetReasonBitField'] = int.from_bytes(data[7:9], byteorder='little')
-        labeled_data['payloadModesStatus'] = int.from_bytes(data[9:11], byteorder='little')
+        labeled_data['opMode'] = int.from_bytes(data[0], byteorder='little', signed=False)
+        labeled_data['upTime'] = int.from_bytes(data[1:5], byteorder='little', signed=False)
+        labeled_data['totalResetCount'] = int.from_bytes(data[5:7], byteorder='little', signed=False)
+        labeled_data['resetReasonBitField'] = int.from_bytes(data[7:9], byteorder='little', signed=False)
+        labeled_data['payloadModesStatus'] = int.from_bytes(data[9:11], byteorder='little', signed=False)
 
         return labeled_data
 
@@ -187,7 +187,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(data_keys, shifted_data):
             labeled_data[key] = value
@@ -204,7 +204,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(data_keys, shifted_data):
             labeled_data[key] = value
@@ -286,13 +286,13 @@ class BeaconMsg:
     def parse_eps_0(data: bytes):
         labeled_data = {}
 
-        labeled_data['battEnergy'] = int.from_bytes(data[0:8], byteorder='little')
-        labeled_data['battCharge'] = int.from_bytes(data[8:16], byteorder='little')
-        labeled_data['battChargeCapacity'] = int.from_bytes(data[16:24], byteorder='little')
-        labeled_data['battPercent'] = int.from_bytes(data[24:32], byteorder='little')
-        labeled_data['battVoltage'] = int.from_bytes(data[32:36], byteorder='little')
-        labeled_data['battCurrent'] = int.from_bytes(data[36:40], byteorder='little')
-        labeled_data['battTemperature'] = int.from_bytes(data[40:44], byteorder='little')
+        labeled_data['battEnergy'] = int.from_bytes(data[0:8], byteorder='little', signed=True)
+        labeled_data['battCharge'] = int.from_bytes(data[8:16], byteorder='little', signed=True)
+        labeled_data['battChargeCapacity'] = int.from_bytes(data[16:24], byteorder='little', signed=True)
+        labeled_data['battPercent'] = int.from_bytes(data[24:32], byteorder='little', signed=True)
+        labeled_data['battVoltage'] = int.from_bytes(data[32:36], byteorder='little', signed=True)
+        labeled_data['battCurrent'] = int.from_bytes(data[36:40], byteorder='little', signed=True)
+        labeled_data['battTemperature'] = int.from_bytes(data[40:44], byteorder='little', signed=True)
 
         return labeled_data
 
@@ -303,8 +303,11 @@ class BeaconMsg:
         shifted_data = []
         new_labels = ['sunDataMain', 'sunDataExt', 'tempMCU', 'tempMain', 'tempExt1', 'temptExt2']
 
-        for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+        for i in range(0, 4, 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=False))
+        
+        for i in range(4, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value
@@ -315,17 +318,17 @@ class BeaconMsg:
     def parse_aocs_cntrl_tlm(data: bytes):
         labeled_data = {}
 
-        labeled_data['adcsErrFlags'] = int.from_bytes(data[0:2], byteorder='little')
-        labeled_data['estAngRateNorm'] = int.from_bytes(data[2:6], byteorder='little')
-        labeled_data['estAngRateVec_X'] = int.from_bytes(data[6:10], byteorder='little')
-        labeled_data['estAngRateVec_Y'] = int.from_bytes(data[10:14], byteorder='little')
-        labeled_data['estAngRateVec_Z'] = int.from_bytes(data[14:18], byteorder='little')
-        labeled_data['estAttAngles_Roll'] = int.from_bytes(data[18:22], byteorder='little')
-        labeled_data['estAttAngles_Pitch'] = int.from_bytes(data[22:26], byteorder='little')
-        labeled_data['estAttAngles_Yaw'] = int.from_bytes(data[26:30], byteorder='little')
-        labeled_data['measWheelSpeed_X'] = int.from_bytes(data[30:32], byteorder='little')
-        labeled_data['measWheelSpeed_Y'] = int.from_bytes(data[32:34], byteorder='little')
-        labeled_data['measWheelSpeed_Z'] = int.from_bytes(data[34:36], byteorder='little')
+        labeled_data['adcsErrFlags'] = int.from_bytes(data[0:2], byteorder='little', signed=False)
+        labeled_data['estAngRateNorm'] = int.from_bytes(data[2:6], byteorder='little', signed=True)
+        labeled_data['estAngRateVec_X'] = int.from_bytes(data[6:10], byteorder='little', signed=True)
+        labeled_data['estAngRateVec_Y'] = int.from_bytes(data[10:14], byteorder='little', signed=True)
+        labeled_data['estAngRateVec_Z'] = int.from_bytes(data[14:18], byteorder='little', signed=True)
+        labeled_data['estAttAngles_Roll'] = int.from_bytes(data[18:22], byteorder='little', signed=True)
+        labeled_data['estAttAngles_Pitch'] = int.from_bytes(data[22:26], byteorder='little', signed=True)
+        labeled_data['estAttAngles_Yaw'] = int.from_bytes(data[26:30], byteorder='little', signed=True)
+        labeled_data['measWheelSpeed_X'] = int.from_bytes(data[30:32], byteorder='little', signed=True)
+        labeled_data['measWheelSpeed_Y'] = int.from_bytes(data[32:34], byteorder='little', signed=True)
+        labeled_data['measWheelSpeed_Z'] = int.from_bytes(data[34:36], byteorder='little', signed=True)
 
         return labeled_data
     
@@ -333,10 +336,10 @@ class BeaconMsg:
     def parse_eps_1(data: bytes):
         labeled_data = {}
 
-        labeled_data['battCapacity'] = int.from_bytes(data[0:4], byteorder='little')
-        labeled_data['battVoltage'] = int.from_bytes(data[4:8], byteorder='little')
-        labeled_data['battCurrent'] = int.from_bytes(data[8:12], byteorder='little')
-        labeled_data['battTemperature'] = int.from_bytes(data[12:16], byteorder='little')
+        labeled_data['battCapacity'] = int.from_bytes(data[0:4], byteorder='little', signed=True)
+        labeled_data['battVoltage'] = int.from_bytes(data[4:8], byteorder='little', signed=True)
+        labeled_data['battCurrent'] = int.from_bytes(data[8:12], byteorder='little', signed=True)
+        labeled_data['battTemperature'] = int.from_bytes(data[12:16], byteorder='little', signed=True)
 
         return labeled_data
     
@@ -370,8 +373,14 @@ class BeaconMsg:
             'VIP_Current_VD11'
         ]
 
-        for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+        for i in range(0, 10, 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
+
+        for i in range(10, 14, 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=False))
+
+        for i in range(14, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value
@@ -413,8 +422,13 @@ class BeaconMsg:
             'BAT_TEMP3_2',
         ]
 
-        for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+        for i in range(0, 10, 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
+        
+        shifted_data.append(int.from_bytes(data[10:12], byteorder='little', signed=False))
+
+        for i in range(12, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -462,7 +476,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -473,22 +487,22 @@ class BeaconMsg:
     def parse_eps_5(data: bytes):
         labeled_data = {}
 
-        labeled_data['MODE'] = data[0]
-        labeled_data['RESET_CAUSE'] = data[1]
-        labeled_data['UPTIME'] = int.from_bytes(data[2:6], byteorder='little')
-        labeled_data['ERROR'] = int.from_bytes(data[6:8], byteorder='little')
-        labeled_data['RC_CNT_PWRON'] = int.from_bytes(data[8:10], byteorder='little')
-        labeled_data['RC_CNT_WDG'] = int.from_bytes(data[10:12], byteorder='little')
-        labeled_data['RC_CNT_CMD'] = int.from_bytes(data[12:14], byteorder='little')
-        labeled_data['RC_CNT_MCU'] = int.from_bytes(data[14:16], byteorder='little')
-        labeled_data['RC_CNT_EMLOPO'] = int.from_bytes(data[16:18], byteorder='little')
-        labeled_data['UNIX_TIME'] = int.from_bytes(data[18:22], byteorder='little')
-        labeled_data['UNIX_YEAR'] = int.from_bytes(data[22:26], byteorder='little')
-        labeled_data['UNIX_MONTH'] = int.from_bytes(data[26:30], byteorder='little')
-        labeled_data['UNIX_DAY'] = int.from_bytes(data[30:34], byteorder='little')
-        labeled_data['UNIX_HOUR'] = int.from_bytes(data[34:38], byteorder='little')
-        labeled_data['UNIX_MINUTE'] = int.from_bytes(data[38:42], byteorder='little')
-        labeled_data['UNIX_SECOND'] = int.from_bytes(data[42:46], byteorder='little')
+        labeled_data['MODE'] = int.from_bytes(data[0], byteorder='little', signed=False)
+        labeled_data['RESET_CAUSE'] = int.from_bytes(data[1], byteorder='little', signed=False)
+        labeled_data['UPTIME'] = int.from_bytes(data[2:6], byteorder='little', signed=False)
+        labeled_data['ERROR'] = int.from_bytes(data[6:8], byteorder='little', signed=False)
+        labeled_data['RC_CNT_PWRON'] = int.from_bytes(data[8:10], byteorder='little', signed=False)
+        labeled_data['RC_CNT_WDG'] = int.from_bytes(data[10:12], byteorder='little', signed=False)
+        labeled_data['RC_CNT_CMD'] = int.from_bytes(data[12:14], byteorder='little', signed=False)
+        labeled_data['RC_CNT_MCU'] = int.from_bytes(data[14:16], byteorder='little', signed=False)
+        labeled_data['RC_CNT_EMLOPO'] = int.from_bytes(data[16:18], byteorder='little', signed=False)
+        labeled_data['UNIX_TIME'] = int.from_bytes(data[18:22], byteorder='little', signed=False)
+        labeled_data['UNIX_YEAR'] = int.from_bytes(data[22:26], byteorder='little', signed=False)
+        labeled_data['UNIX_MONTH'] = int.from_bytes(data[26:30], byteorder='little', signed=False)
+        labeled_data['UNIX_DAY'] = int.from_bytes(data[30:34], byteorder='little', signed=False)
+        labeled_data['UNIX_HOUR'] = int.from_bytes(data[34:38], byteorder='little', signed=False)
+        labeled_data['UNIX_MINUTE'] = int.from_bytes(data[38:42], byteorder='little', signed=False)
+        labeled_data['UNIX_SECOND'] = int.from_bytes(data[42:46], byteorder='little', signed=False)
 
         return labeled_data
     
@@ -510,7 +524,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=False))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -561,7 +575,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(islice(new_labels, len(shifted_data)), shifted_data):
             labeled_data[key] = value
@@ -579,7 +593,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 4):
-            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -597,7 +611,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 4):
-            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -619,7 +633,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 4):
-            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -641,7 +655,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 4):
-            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -659,7 +673,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 4):
-            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -680,7 +694,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 4):
-            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -698,7 +712,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 4):
-            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+4], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -715,7 +729,7 @@ class BeaconMsg:
         ]
 
         for key, value in zip(new_labels, data):
-            labeled_data[key] = value 
+            labeled_data[key] = int.from_bytes(value, byteorder='little', signed=True) 
         
         return labeled_data
     
@@ -729,7 +743,7 @@ class BeaconMsg:
         ]
 
         for key, value in zip(new_labels, data):
-            labeled_data[key] = value 
+            labeled_data[key] = int.from_bytes(value, byteorder='little', signed=False)  
         
         return labeled_data
     
@@ -742,7 +756,7 @@ class BeaconMsg:
         ]
 
         for key, value in zip(new_labels, data):
-            labeled_data[key] = value 
+            labeled_data[key] = labeled_data[key] = int.from_bytes(value, byteorder='little', signed=False) 
         
         return labeled_data
     
@@ -784,7 +798,7 @@ class BeaconMsg:
         ]
 
         for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
@@ -817,8 +831,11 @@ class BeaconMsg:
             'Z_Rate_Sensor_Temp'
         ]
 
-        for i in range(0, len(data), 2):
-            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little'))
+        for i in range(0, 24, 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=False))
+
+        for i in range(24, len(data), 2):
+            shifted_data.append(int.from_bytes(data[i:i+2], byteorder='little', signed=True))
 
         for key, value in zip(new_labels, shifted_data):
             labeled_data[key] = value 
