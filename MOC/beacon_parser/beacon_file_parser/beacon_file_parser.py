@@ -1,15 +1,10 @@
-#  ---------------------------------------------------------------------------------------------------------------------- 
-# Author: Jared Morrison                                                                                                  
-# Description: Parses beacons from a .bin file.                                                                           
-# Date: November 5th, 2024                                                                                                
-#                                                                                                                         
-# Beacon Structure:                                                                                                       
-# | BeaconHeader | BeaconMsgHeader | Beacon Data | BeaconMsgHeader | Beacon Data | ... 77 bytes                           
-#                                                                                                                         
-# Note:                                                                                                                   
-# Each beacon only has a single BeaconHeader. Each message within that beacon has its own BeaconMsgHeader and data. Each  
-# flag attribute (flag_a, flag_b, etc.) are currently unknown bytes in both the Beacon Header and Beacon Message Header.  
-# ----------------------------------------------------------------------------------------------------------------------- 
+ ##############################################################################
+ # @file           : beacon_file_parser.py
+ # @author 		   : Jared Morrison
+ # @date	 	   : November 18, 2024
+ # @brief          : DEPRECATED. This script was used for testing beacon
+ #                   parsing from a file.
+ ##############################################################################
 
 
 import os
@@ -17,8 +12,11 @@ from struct import unpack_from
 from itertools import islice
 
 
-# ----------------------------------------------------------------------------------------------------------------------- #
-# Parses message headers. Instances are created by class BeaconMsg.
+# @brief Class representing the header of a beacon message.
+# 
+# @details Private class used by BeaconMsg class. Used for parsing 
+#          the header of a beacon message.
+
 class BeaconMsgHeader:
     MSG_HEADER_SIZE = 4
 
@@ -78,12 +76,12 @@ class BeaconMsgHeader:
             return 0
     
 
+# @brief Class representing a beacon message with its header and data.
+# 
+# @details This private class creates an instance of BeaconMsgHeader, which defines the length of the beacon message
+#          and the dc_id. It is responsible for parsing individual beacon messages, storing the parsed data, 
+#          and tracking whether the message is partial or complete.
 
-
-# ----------------------------------------------------------------------------------------------------------------------- #
-# Creates instance of BeaconMsgHeader, which provides the length of
-# the BeaconMsg data and dc_id. Parses individual beacon messages, 
-# stores the parsed data, and keeps track of whether a message is partial.
 class BeaconMsg:
     def __init__(self):
         self.header = BeaconMsgHeader()
@@ -100,8 +98,10 @@ class BeaconMsg:
         return str_repr
 
 
-# ----------------------------------------------------------------------------------------------------------------------- #
-# Parses Beacon Headers.
+# @brief Class representing a beacon header.
+# 
+# @details Private class used to parse the header of an entire beacon.
+
 class BeaconHeader:
     HEADER_SIZE = 7
    
@@ -133,12 +133,12 @@ class BeaconHeader:
         return f"\n\nBeaconHeader> Beacon Consecutive Number: {hex(self.beacon_consecutive_number)} | UHF Address: {hex(self.uhf_address)} | Flag A: {hex(self.flag_a)} | OBC Address: {hex(self.obc_address)} | Data ID: {hex(self.data_id)} | Flag B: {hex(self.flag_b)} | Flag C: {hex(self.flag_c)}"
 
 
-# ----------------------------------------------------------------------------------------------------------------------- #
-# Parses all beacons within a .bin file. Creates a new instance of
-# BeaconHeader for each new beacon, and creates new instances of 
-# BeaconMsg for each message within a beacon. Beacon messages are 
-# stored in msg_list, and partial messages can be concatenated by 
-# calling handle_partial_msg.
+# @brief Class for parsing beacon messages from a binary file.
+# 
+# @details This class parses all beacons within a .bin file. For each new beacon, a new instance of BeaconHeader 
+#          is created, and for each message within the beacon, new instances of BeaconMsg are created. These messages 
+#          are stored in msg_list. Partial messages can be concatenated by calling handle_partial_msg.
+
 class BeaconFile:
     BEACON_SIZE = 77
     def __init__(self, filepath):
@@ -292,7 +292,6 @@ class BeaconFile:
 
         return labeled_data
 
-
     @staticmethod
     def parse_adcs_0(data: bytes):
         labeled_data = {}
@@ -341,66 +340,53 @@ class BeaconFile:
         byte_4 = data[4]
         byte_5 = data[5]
 
-        # Bits 0-7
-        # 01 00 10 11
-        labeled_data['Attitude_Estimation_Mode'] = byte_0 & 0b1111  # 10 11
-        labeled_data['Control_Mode'] = (byte_0 >> 4) & 0b1111       # 01 00    
+        labeled_data['Attitude_Estimation_Mode'] = byte_0 & 0b1111  
+        labeled_data['Control_Mode'] = (byte_0 >> 4) & 0b1111    
         
-        # Bits 8-15
-        # 01 00 10 11
-        labeled_data['ADCS_Run_Mode'] = byte_1 & 0b1                        # 1
-        labeled_data['ASGP4_Mode'] = (byte_1 >> 1) & 0b1                    # 1
-        labeled_data['CubeControl_Signal_Enabled'] = (byte_1 >> 2) & 0b1    # 0
-        labeled_data['CubeControl_Motor_Enabled'] = (byte_1 >> 3) & 0b1     # 1
-        labeled_data['CubeSense1_Enabled'] = (byte_1 >> 4) & 0b11           # 00
-        labeled_data['CubeSense2_Enabled'] = (byte_1 >> 6) & 0b11           # 01
+        labeled_data['ADCS_Run_Mode'] = byte_1 & 0b1                        
+        labeled_data['ASGP4_Mode'] = (byte_1 >> 1) & 0b1                    
+        labeled_data['CubeControl_Signal_Enabled'] = (byte_1 >> 2) & 0b1    
+        labeled_data['CubeControl_Motor_Enabled'] = (byte_1 >> 3) & 0b1     
+        labeled_data['CubeSense1_Enabled'] = (byte_1 >> 4) & 0b11           
+        labeled_data['CubeSense2_Enabled'] = (byte_1 >> 6) & 0b11           
 
-        # Bits 16-23
-        # 01 00 10 11
-        labeled_data['CubeWheel1_Enabled'] = byte_2 & 0b1                   # 1
-        labeled_data['CubeWheel2_Enabled'] = (byte_2 >> 1) & 0b1            # 1
-        labeled_data['CubeWheel3_Enabled'] = (byte_2 >> 2) & 0b1            # 0
-        labeled_data['CubeStar_Enabled'] = (byte_2 >> 3) & 0b1              # 1
-        labeled_data['GPS_Receiver_Enabled'] = (byte_2 >> 4) & 0b1          # 0
-        labeled_data['GPS_LNA_Power_Enabled'] = (byte_2 >> 5) & 0b1         # 0
-        labeled_data['Motor_Driver_Enabled'] = (byte_2 >> 6) & 0b1          # 1
-        labeled_data['Sun_is_Above_Local_Horizon'] = (byte_2 >> 7) & 0b1    # 0
+        labeled_data['CubeWheel1_Enabled'] = byte_2 & 0b1                   
+        labeled_data['CubeWheel2_Enabled'] = (byte_2 >> 1) & 0b1            
+        labeled_data['CubeWheel3_Enabled'] = (byte_2 >> 2) & 0b1            
+        labeled_data['CubeStar_Enabled'] = (byte_2 >> 3) & 0b1              
+        labeled_data['GPS_Receiver_Enabled'] = (byte_2 >> 4) & 0b1          
+        labeled_data['GPS_LNA_Power_Enabled'] = (byte_2 >> 5) & 0b1         
+        labeled_data['Motor_Driver_Enabled'] = (byte_2 >> 6) & 0b1          
+        labeled_data['Sun_is_Above_Local_Horizon'] = (byte_2 >> 7) & 0b1    
 
-        # Bits 24-31
-        # 01 00 10 11
-        labeled_data['CubeSense1_Communications_Error'] = byte_3 & 0b1                  # 1
-        labeled_data['CubeSense2_Communications_Error'] = (byte_3 >> 1) & 0b1           # 1
-        labeled_data['CubeControl_Signal_Communications_Error'] = (byte_3 >> 2) & 0b1   # 0
-        labeled_data['CubeControl_Motor_Communications_Error'] = (byte_3 >> 3) & 0b1    # 1
-        labeled_data['CubeWheel1_Communications_Error'] = (byte_3 >> 4) & 0b1           # 0
-        labeled_data['CubeWheel2_Communications_Error'] = (byte_3 >> 5) & 0b1           # 0
-        labeled_data['CubeWheel3_Communications_Error'] = (byte_3 >> 6) & 0b1           # 1
-        labeled_data['CubeStar_Communications_Error'] = (byte_3 >> 7) & 0b1             # 0
+        labeled_data['CubeSense1_Communications_Error'] = byte_3 & 0b1                  
+        labeled_data['CubeSense2_Communications_Error'] = (byte_3 >> 1) & 0b1           
+        labeled_data['CubeControl_Signal_Communications_Error'] = (byte_3 >> 2) & 0b1   
+        labeled_data['CubeControl_Motor_Communications_Error'] = (byte_3 >> 3) & 0b1    
+        labeled_data['CubeWheel1_Communications_Error'] = (byte_3 >> 4) & 0b1           
+        labeled_data['CubeWheel2_Communications_Error'] = (byte_3 >> 5) & 0b1           
+        labeled_data['CubeWheel3_Communications_Error'] = (byte_3 >> 6) & 0b1           
+        labeled_data['CubeStar_Communications_Error'] = (byte_3 >> 7) & 0b1             
 
-        # Bits 32-39
-        # 01 00 10 11
-        labeled_data['Magnetometer_Range_Error'] = byte_4 & 0b1                 # 1
-        labeled_data['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    # 1
-        labeled_data['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 2) & 0b1     # 0
-        labeled_data['Cam1_Sensor_Busy_Error'] = (byte_4 >> 3) & 0b1            # 1
-        labeled_data['Cam1_Sensor_Detection_Error'] = (byte_4 >> 4) & 0b1       # 0
-        labeled_data['Sun_Sensor_Range_Error'] = (byte_4 >> 5) & 0b1            # 0
-        labeled_data['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1    # 1
-        labeled_data['Cam2_3V3_Overcurrent_Detected'] = (byte_4 >> 7) & 0b1     # 0
+        labeled_data['Magnetometer_Range_Error'] = byte_4 & 0b1                 
+        labeled_data['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    
+        labeled_data['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 2) & 0b1     
+        labeled_data['Cam1_Sensor_Busy_Error'] = (byte_4 >> 3) & 0b1            
+        labeled_data['Cam1_Sensor_Detection_Error'] = (byte_4 >> 4) & 0b1       
+        labeled_data['Sun_Sensor_Range_Error'] = (byte_4 >> 5) & 0b1            
+        labeled_data['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1    
+        labeled_data['Cam2_3V3_Overcurrent_Detected'] = (byte_4 >> 7) & 0b1     
 
-        # Bits 40-47
-        # 01 00 10 11
-        labeled_data['Cam2_Sensor_Busy_Error'] = byte_5 & 0b1                   # 1
-        labeled_data['Cam2_Sensor_Detection_Error'] = (byte_5 >> 1) & 0b1       # 1
-        labeled_data['Nadir_Sensor_Range_Error'] = (byte_5 >> 2) & 0b1          # 0
-        labeled_data['Rate_Sensor_Range_Error'] = (byte_5 >> 3) & 0b1           # 1
-        labeled_data['Wheel_Speed_Range_Error'] = (byte_5 >> 4) & 0b1           # 0
-        labeled_data['Coarse_Sun_Sensor_Error'] = (byte_5 >> 5) & 0b1           # 0
-        labeled_data['StarTracker_Match_Error'] = (byte_5 >> 6) & 0b1           # 1
-        labeled_data['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  # 0
+        labeled_data['Cam2_Sensor_Busy_Error'] = byte_5 & 0b1                   
+        labeled_data['Cam2_Sensor_Detection_Error'] = (byte_5 >> 1) & 0b1       
+        labeled_data['Nadir_Sensor_Range_Error'] = (byte_5 >> 2) & 0b1          
+        labeled_data['Rate_Sensor_Range_Error'] = (byte_5 >> 3) & 0b1           
+        labeled_data['Wheel_Speed_Range_Error'] = (byte_5 >> 4) & 0b1           
+        labeled_data['Coarse_Sun_Sensor_Error'] = (byte_5 >> 5) & 0b1           
+        labeled_data['StarTracker_Match_Error'] = (byte_5 >> 6) & 0b1           
+        labeled_data['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  
 
         return labeled_data
-
 
     @staticmethod
     def parse_eps_0(data: bytes):
@@ -724,7 +710,6 @@ class BeaconFile:
         
         return labeled_data
             
-
     @staticmethod
     def parse_sensor_coarse_sun(data: bytes):
         labeled_data = {}
@@ -745,7 +730,6 @@ class BeaconFile:
             labeled_data[key] = value 
         
         return labeled_data
-
 
     @staticmethod
     def parse_es_adcs_sensor_mag(data: bytes):
@@ -946,10 +930,12 @@ class BeaconFile:
         return labeled_data
 
 
+# @brief Main function for parsing and handling beacon messages from a file.
+#
+# @details This function initializes a BeaconFile object with the path to a raw beacon binary file, then parses the file 
+#          to extract beacon messages. It handles any partial messages, labels the data, and prints the complete messages 
+#          stored in the msg_list.
 
-
-# ----------------------------------------------------------------------------------------------------------------------- #
-# Main function
 if __name__ == "__main__":
     root = os.path.dirname(__file__)
     filepath = os.path.join(root, "raw_beacons.bin")

@@ -1,3 +1,12 @@
+ ##############################################################################
+ # @file           : telemetry_parser.py
+ # @author 		   : Jared Morrison
+ # @date	 	   : November 18, 2024
+ # @brief          : Parses .TLM files, generates .CSV files, and places
+ #                   parsed data into the generated .CSV files.
+ ##############################################################################
+
+
 from sys import argv
 import datetime
 import os
@@ -9,14 +18,22 @@ from dependencies import datacache
 import csv
 import glob
 from itertools import islice
-# Variable controlling how many tasks are in the TaskStats vector
-NUM_TASKS = 30
+
+ 
+# @var NUM_TASKS The total number of tasks listed in TaskStats.
+#      Can be either 30 or 36 depending on OBC datacache config.
+
+NUM_TASKS = 36
 
 
-# -----------------------------------------------------------------------------------------------------------
+# @brief Converts a Unix timestamp to a human-readable date string.
+# 
+# @param unix_timestamp The Unix timestamp to convert.
+# @return A string representing the date in 'YYYY-MM-DD HH:MM:SS' format,
+#         or 'invalid timestamp' if conversion fails.
+
 def unixtime_to_readable_date(unix_timestamp: int) -> str:
     date_string = ""
-
     try:
         date_string = datetime.datetime.fromtimestamp(unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
     except Exception as exc:
@@ -24,7 +41,12 @@ def unixtime_to_readable_date(unix_timestamp: int) -> str:
 
     return date_string
 
-# -----------------------------------------------------------------------------------------------------------
+
+# @brief Represents the header structure for a telemetry file.
+# 
+# @details This class defines the structure of the header used in telemetry files. Private class
+#          used by TelemetryFile to parse the telemetry file header.
+
 class TelemetryFileHdr:
     HDR_SIZE = 21
     CRC_SIZE = 2
@@ -51,7 +73,6 @@ class TelemetryFileHdr:
             ) = unpack_from("<6sLLL?H", data)
             # skip CRC bytes...
             self.calc_crc = es_crc.crc_util.crc16(data[: -TelemetryFileHdr.CRC_SIZE])
-
             self.is_crc_valid = (self.crc == self.calc_crc)
 
             return TelemetryFileHdr.HDR_SIZE if self.is_crc_valid else 0
@@ -64,7 +85,11 @@ class TelemetryFileHdr:
     def __str__(self):
         return f'TelemetryFileHdr> signature: {self.signature} | ver: {self.version} | next_write_offset: {self.next_write_offset} | last_timestamp: {self.last_timestamp} | complete: {self.file_complete} | crc: {hex(self.crc)} | is_valid: {self.is_crc_valid} | calc_crc: {hex(self.calc_crc)}'
 
-# -----------------------------------------------------------------------------------------------------------
+
+# @brief Represents the structure of individual messages contained within a telemetry file.
+#
+# @details Private class used by TelemetryFile to parse out individual messages.
+
 class TelemetryMsg:
     HDR_SIZE = 11
     CRC_SIZE = 2
@@ -122,9 +147,7 @@ class TelemetryMsg:
 
         # skip CRC bytes...
         self.calc_crc = es_crc.crc_util.crc16(data[: -TelemetryMsg.CRC_SIZE])
-
         self.is_crc_valid = (self.crc == self.calc_crc)
-
         self.total_len = TelemetryMsg.HDR_SIZE + self.data_len + TelemetryMsg.CRC_SIZE
 
         return (self.total_len) if self.is_crc_valid else 0
@@ -153,9 +176,15 @@ class TelemetryMsg:
 
     #     return str_repr
 
-# -----------------------------------------------------------------------------------------------------------
+
+# @brief Parses telemetry messages into CSV files.
+#
+# @details Public class used to generate CSV files given a message list
+#          and input file. After parsing telemetry files with class TelemetryFile,
+#          the user can use CSVFiles by passing the TelemtryFile message list and 
+#          file name.
+
 class CSVFiles:
-    # Class Attributes
     dc_entries_dict = {
         0x00000010: "OBC_0",
         0x00000011: "ADCS_0",
@@ -190,7 +219,6 @@ class CSVFiles:
         0x00000035: "ADCS_4"
     }
 
-    # Initialization
     def __init__(self, msglist, input_file):
         self.msglist = msglist
         self.output_folderpath = CSVFiles.generate_output_folderpath(input_file)
@@ -246,7 +274,6 @@ class CSVFiles:
 
         return data_dict
     
-
     @staticmethod
     def parse_adcs_0_vec(data_dict):
         new_dict = {}
@@ -342,67 +369,53 @@ class CSVFiles:
         byte_4 = vector_data[4]
         byte_5 = vector_data[5]
 
-        # Bits 0-7
-        # 01 00 10 11
-        new_dict['Attitude_Estimation_Mode'] = byte_0 & 0b1111  # 10 11
-        new_dict['Control_Mode'] = (byte_0 >> 4) & 0b1111       # 01 00    
-        
-        # Bits 8-15
-        # 01 00 10 11
-        new_dict['ADCS_Run_Mode'] = byte_1 & 0b1                        # 1
-        new_dict['ASGP4_Mode'] = (byte_1 >> 1) & 0b1                    # 1
-        new_dict['CubeControl_Signal_Enabled'] = (byte_1 >> 2) & 0b1    # 0
-        new_dict['CubeControl_Motor_Enabled'] = (byte_1 >> 3) & 0b1     # 1
-        new_dict['CubeSense1_Enabled'] = (byte_1 >> 4) & 0b11           # 00
-        new_dict['CubeSense2_Enabled'] = (byte_1 >> 6) & 0b11           # 01
+        new_dict['Attitude_Estimation_Mode'] = byte_0 & 0b1111  
+        new_dict['Control_Mode'] = (byte_0 >> 4) & 0b1111         
 
-        # Bits 16-23
-        # 01 00 10 11
-        new_dict['CubeWheel1_Enabled'] = byte_2 & 0b1                   # 1
-        new_dict['CubeWheel2_Enabled'] = (byte_2 >> 1) & 0b1            # 1
-        new_dict['CubeWheel3_Enabled'] = (byte_2 >> 2) & 0b1            # 0
-        new_dict['CubeStar_Enabled'] = (byte_2 >> 3) & 0b1              # 1
-        new_dict['GPS_Receiver_Enabled'] = (byte_2 >> 4) & 0b1          # 0
-        new_dict['GPS_LNA_Power_Enabled'] = (byte_2 >> 5) & 0b1         # 0
-        new_dict['Motor_Driver_Enabled'] = (byte_2 >> 6) & 0b1          # 1
-        new_dict['Sun_is_Above_Local_Horizon'] = (byte_2 >> 7) & 0b1    # 0
+        new_dict['ADCS_Run_Mode'] = byte_1 & 0b1                        
+        new_dict['ASGP4_Mode'] = (byte_1 >> 1) & 0b1                    
+        new_dict['CubeControl_Signal_Enabled'] = (byte_1 >> 2) & 0b1    
+        new_dict['CubeControl_Motor_Enabled'] = (byte_1 >> 3) & 0b1     
+        new_dict['CubeSense1_Enabled'] = (byte_1 >> 4) & 0b11           
+        new_dict['CubeSense2_Enabled'] = (byte_1 >> 6) & 0b11           
 
-        # Bits 24-31
-        # 01 00 10 11
-        new_dict['CubeSense1_Communications_Error'] = byte_3 & 0b1                  # 1
-        new_dict['CubeSense2_Communications_Error'] = (byte_3 >> 1) & 0b1           # 1
-        new_dict['CubeControl_Signal_Communications_Error'] = (byte_3 >> 2) & 0b1   # 0
-        new_dict['CubeControl_Motor_Communications_Error'] = (byte_3 >> 3) & 0b1    # 1
-        new_dict['CubeWheel1_Communications_Error'] = (byte_3 >> 4) & 0b1           # 0
-        new_dict['CubeWheel2_Communications_Error'] = (byte_3 >> 5) & 0b1           # 0
-        new_dict['CubeWheel3_Communications_Error'] = (byte_3 >> 6) & 0b1           # 1
-        new_dict['CubeStar_Communications_Error'] = (byte_3 >> 7) & 0b1             # 0
+        new_dict['CubeWheel1_Enabled'] = byte_2 & 0b1                   
+        new_dict['CubeWheel2_Enabled'] = (byte_2 >> 1) & 0b1            
+        new_dict['CubeWheel3_Enabled'] = (byte_2 >> 2) & 0b1            
+        new_dict['CubeStar_Enabled'] = (byte_2 >> 3) & 0b1              
+        new_dict['GPS_Receiver_Enabled'] = (byte_2 >> 4) & 0b1          
+        new_dict['GPS_LNA_Power_Enabled'] = (byte_2 >> 5) & 0b1         
+        new_dict['Motor_Driver_Enabled'] = (byte_2 >> 6) & 0b1          
+        new_dict['Sun_is_Above_Local_Horizon'] = (byte_2 >> 7) & 0b1   
 
-        # Bits 32-39
-        # 01 00 10 11
-        new_dict['Magnetometer_Range_Error'] = byte_4 & 0b1                 # 1
-        new_dict['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    # 1
-        new_dict['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 2) & 0b1     # 0
-        new_dict['Cam1_Sensor_Busy_Error'] = (byte_4 >> 3) & 0b1            # 1
-        new_dict['Cam1_Sensor_Detection_Error'] = (byte_4 >> 4) & 0b1       # 0
-        new_dict['Sun_Sensor_Range_Error'] = (byte_4 >> 5) & 0b1            # 0
-        new_dict['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1    # 1
-        new_dict['Cam2_3V3_Overcurrent_Detected'] = (byte_4 >> 7) & 0b1     # 0
+        new_dict['CubeSense1_Communications_Error'] = byte_3 & 0b1                  
+        new_dict['CubeSense2_Communications_Error'] = (byte_3 >> 1) & 0b1          
+        new_dict['CubeControl_Signal_Communications_Error'] = (byte_3 >> 2) & 0b1   
+        new_dict['CubeControl_Motor_Communications_Error'] = (byte_3 >> 3) & 0b1    
+        new_dict['CubeWheel1_Communications_Error'] = (byte_3 >> 4) & 0b1          
+        new_dict['CubeWheel2_Communications_Error'] = (byte_3 >> 5) & 0b1          
+        new_dict['CubeWheel3_Communications_Error'] = (byte_3 >> 6) & 0b1           
+        new_dict['CubeStar_Communications_Error'] = (byte_3 >> 7) & 0b1             
 
-        # Bits 40-47
-        # 01 00 10 11
-        new_dict['Cam2_Sensor_Busy_Error'] = byte_5 & 0b1                   # 1
-        new_dict['Cam2_Sensor_Detection_Error'] = (byte_5 >> 1) & 0b1       # 1
-        new_dict['Nadir_Sensor_Range_Error'] = (byte_5 >> 2) & 0b1          # 0
-        new_dict['Rate_Sensor_Range_Error'] = (byte_5 >> 3) & 0b1           # 1
-        new_dict['Wheel_Speed_Range_Error'] = (byte_5 >> 4) & 0b1           # 0
-        new_dict['Coarse_Sun_Sensor_Error'] = (byte_5 >> 5) & 0b1           # 0
-        new_dict['StarTracker_Match_Error'] = (byte_5 >> 6) & 0b1           # 1
-        new_dict['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  # 0
+        new_dict['Magnetometer_Range_Error'] = byte_4 & 0b1                 
+        new_dict['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    
+        new_dict['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 2) & 0b1     
+        new_dict['Cam1_Sensor_Busy_Error'] = (byte_4 >> 3) & 0b1            
+        new_dict['Cam1_Sensor_Detection_Error'] = (byte_4 >> 4) & 0b1       
+        new_dict['Sun_Sensor_Range_Error'] = (byte_4 >> 5) & 0b1            
+        new_dict['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1   
+        new_dict['Cam2_3V3_Overcurrent_Detected'] = (byte_4 >> 7) & 0b1    
+
+        new_dict['Cam2_Sensor_Busy_Error'] = byte_5 & 0b1                   
+        new_dict['Cam2_Sensor_Detection_Error'] = (byte_5 >> 1) & 0b1     
+        new_dict['Nadir_Sensor_Range_Error'] = (byte_5 >> 2) & 0b1       
+        new_dict['Rate_Sensor_Range_Error'] = (byte_5 >> 3) & 0b1         
+        new_dict['Wheel_Speed_Range_Error'] = (byte_5 >> 4) & 0b1         
+        new_dict['Coarse_Sun_Sensor_Error'] = (byte_5 >> 5) & 0b1       
+        new_dict['StarTracker_Match_Error'] = (byte_5 >> 6) & 0b1        
+        new_dict['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  
 
         return new_dict
-
-
 
     @staticmethod
     def parse_aocs_cntrl_tlm_vec(data_dict):
@@ -428,7 +441,6 @@ class CSVFiles:
 
             new_dict.update({key: value for key, value in zip(new_keys, new_values)})
         return new_dict
-
 
     @staticmethod
     def parse_eps_3_vec(data_dict):
@@ -492,7 +504,6 @@ class CSVFiles:
 
         return new_dict
 
-
     @staticmethod
     def parse_eps_4_vec(data_dict):
         new_dict = {}
@@ -539,7 +550,6 @@ class CSVFiles:
             new_dict.update({key: value for key, value in zip(new_keys, new_values)})
 
         return new_dict
-
 
     @staticmethod
     def parse_taskstats_vec(data_dict):
@@ -620,7 +630,13 @@ class CSVFiles:
                     writer = csv.writer(file)
                     writer.writerow(row)
 
-# -----------------------------------------------------------------------------------------------------------
+
+# @brief Represents the structure of an entire TLM file.
+#
+# @details Public class used to parse an entire TLM file given a file name. This class
+#          takes a TLM file, reads each byte, creates an instance of the TelemetryFileHdr
+#          class, and creates an instance of the TelemetryMsg class for each message.
+
 class TelemetryFile:
     def __init__(self, fname: str):
         script_dir = os.path.dirname(__file__)
@@ -645,7 +661,6 @@ class TelemetryFile:
 
         while byte:
             current_pos = f.tell()
-
             if byte[0] != 0:
                 msgdata.append(byte[0])
             else:
@@ -681,10 +696,13 @@ class TelemetryFile:
         f.close()
         print(f'{len(self.msglist)} messages parsed | invalid count: {self.invalid_msg_cnt}')
 
-# -----------------------------------------------------------------------------------------------------------
-# Usage: Place all .TLM files to be parsed in the 'tlm_files' directory. 
-# For each parsed .TLM file, a corresponding folder will be created inside 
-# the 'csv_files' directory, where the generated CSV files will be stored.
+
+# @brief Script entry point used to parse all TLM files and generate CSV files.
+#
+# @details Place all .TLM files to be parsed in the 'tlm_files' directory. 
+#          For each parsed .TLM file, a corresponding folder will be created inside 
+#          the 'csv_files' directory, where the generated CSV files will be stored.
+
 if __name__ == "__main__":
     root_dir = os.path.dirname(__file__)
     tlm_file_list = glob.glob(f"{root_dir}/tlm_files/*.TLM")

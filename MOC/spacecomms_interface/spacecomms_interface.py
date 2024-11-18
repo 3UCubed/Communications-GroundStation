@@ -1,3 +1,13 @@
+ ##############################################################################
+ # @file           : spacecomms_interface.py
+ # @author 		   : Jared Morrison
+ # @date	 	   : November 18, 2024
+ # @brief          : Interfaces with SpaceComms. Can be used to retreive
+ #                   uptime, download all .TLM files, and start beacon
+ #                   listening.
+ ##############################################################################
+
+
 from client_apps.OBCClientApp import FP_API_OBC
 from web_socket_api.CommandProtocol import send_command
 from web_socket_api.constants import SatelliteId, CommandType, TripType, ModuleMac, RadioConfiguration, EncyptionKey
@@ -8,11 +18,19 @@ import os
 import time
 import sys
 
-# For API containing OBC commands
+
+# @brief Sets up API used for interfacing with the OBC
+
 obc_api = FP_API_OBC()
 
 
-# Gets uptime from OBC through SpaceComms
+# @brief Retrieves the uptime of the satellite.
+# 
+# @details This function sends a request to the OBC to get the satellite's uptime,
+#          waits for the response, parses it, and logs the parsed uptime value.
+# 
+# @return None
+
 def get_uptime():
     serialized_request = list(obc_api.req_getUptime())
     serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
@@ -20,7 +38,14 @@ def get_uptime():
     logging.info(vars(parsed_response["s__upTime"]))
 
 
-# Downloads a file given a filename
+# @brief Downloads a file from the onboard computer.
+# 
+# @details This function sends a file download request to the onboard computer (OBC) using the provided 
+#          filename, waits for the response, and writes the received file data to the local disk.
+# 
+# @param file_name The name of the file to download.
+# @return Returns 1 if the file was successfully downloaded, 0 if an error occurred.
+
 def download_file(file_name: str):
     status = 1
     file_format = "{0}\0".format(file_name).encode("utf-8")
@@ -39,12 +64,26 @@ def download_file(file_name: str):
     print(f"File {file_name} written to downloaded_files directory")
     return status
 
-# Initializing the radio
+
+# @brief Initializes the radio with the specified configuration.
+# 
+# @details This function sets the radio's MAC address, updates the uplink and downlink frequencies, 
+#          and configures the AES encryption key for secure communication.
+# 
+# @return None
+
 def init_radio():
     set_radio_address(ModuleMac.UHF_MAC_ADDRESS)
     update_frequency(RadioConfiguration.UHF_UPLINK_FREQUENCY, RadioConfiguration.UHF_DOWNLINK_FREQUENCY)
     update_aes_key(EncyptionKey.AES_IV, EncyptionKey.AES_KEY)
 
+
+# @brief Retrieves a list of filenames matching the specified pattern.
+# 
+# @details This function reads the DIRLIST.TXT file from the "downloaded_files" directory, searches for
+#          filenames that match the regex pattern, and returns a list of those filenames.
+# 
+# @return A list of filenames matching the pattern "\d{5}.TLM".
 
 def get_filenames():
     filenames = []
@@ -55,6 +94,15 @@ def get_filenames():
         dirlist_content = file.read()
     filenames = re.findall(regex_pattern, dirlist_content)
     return filenames
+
+
+# @brief Downloads telemetry files listed in DIRLIST.TXT.
+# 
+# @details This function downloads the DIRLIST.TXT file, extracts the filenames of the telemetry files,
+#          and attempts to download each file. If a download fails, it retries up to 10 times before marking
+#          the file as missed. The function also tracks the time taken for each file and the overall download process.
+# 
+# @return None
 
 def download_telemetry_files():
     print("Downloading dirlist...")
@@ -90,6 +138,17 @@ def download_telemetry_files():
     print("Missed files: ", end="")
     print(', '.join(missed_files))
     
+
+# @brief Main entry point for the script to initialize the radio and execute commands.
+# 
+# @details This function sets up logging, initializes the radio, and processes command-line arguments to
+#          execute specific functions based on the provided command. Valid commands include:
+#          - "1": Retrieves the uptime.
+#          - "2": Downloads telemetry files.
+#          - "3": Starts beacon listening.
+#          If no valid command is provided, the script exits.
+# 
+# @return None
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

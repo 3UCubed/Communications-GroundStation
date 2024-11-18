@@ -1,8 +1,24 @@
+ ##############################################################################
+ # @file           : realtime_beacon_parser.py
+ # @author 		   : Jared Morrison
+ # @date	 	   : November 18, 2024
+ # @brief          : Parses beacons in real time and prints output to console.
+ ##############################################################################
+
+
 import subprocess
 import os
 from struct import unpack_from
 from itertools import islice
 
+
+# @brief Executes a command and yields its output line by line.
+# 
+# @details This function runs a command using subprocess.Popen and returns the standard output of the command
+#          line by line. It handles a keyboard interrupt by terminating the process and closing the output stream.
+# 
+# @param cmd The command to execute, provided as a list of strings.
+# @yield The output from the command, line by line.
 
 def execute(cmd):
     popen = subprocess.Popen(
@@ -18,7 +34,9 @@ def execute(cmd):
         popen.wait()
 
 
-
+# @brief Represents the header of a beacon message.
+# 
+# @details Private class used by BeaconMsg to parse out a message header
 
 class BeaconMsgHeader:
     MSG_HEADER_SIZE = 4
@@ -78,6 +96,12 @@ class BeaconMsgHeader:
         else:
             return 0
 
+
+# @brief Represents a beacon message.
+# 
+# @details Private class used by the Beacon class. For each message within a beacon,
+#          the Beacon class creates a new instance of BeaconMsg.
+
 class BeaconMsg:
     def __init__(self):
         self.header = BeaconMsgHeader()
@@ -90,13 +114,6 @@ class BeaconMsg:
         for byte in data:
             self.data.append(byte)
         
-        if self.header.dc_id == 0x00000011:
-            print(self.data)
-
-
-
-
-
     def label(self):
         if self.header.dc_id == "OBC_0":
             self.labeled_data = BeaconMsg.parse_obc_0(self.data)
@@ -172,7 +189,6 @@ class BeaconMsg:
 
         return labeled_data
 
-
     @staticmethod
     def parse_adcs_0(data: bytes):
         labeled_data = {}
@@ -221,66 +237,53 @@ class BeaconMsg:
         byte_4 = data[4]
         byte_5 = data[5]
 
-        # Bits 0-7
-        # 01 00 10 11
-        labeled_data['Attitude_Estimation_Mode'] = byte_0 & 0b1111  # 10 11
-        labeled_data['Control_Mode'] = (byte_0 >> 4) & 0b1111       # 01 00    
+        labeled_data['Attitude_Estimation_Mode'] = byte_0 & 0b1111  
+        labeled_data['Control_Mode'] = (byte_0 >> 4) & 0b1111           
         
-        # Bits 8-15
-        # 01 00 10 11
-        labeled_data['ADCS_Run_Mode'] = byte_1 & 0b1                        # 1
-        labeled_data['ASGP4_Mode'] = (byte_1 >> 1) & 0b1                    # 1
-        labeled_data['CubeControl_Signal_Enabled'] = (byte_1 >> 2) & 0b1    # 0
-        labeled_data['CubeControl_Motor_Enabled'] = (byte_1 >> 3) & 0b1     # 1
-        labeled_data['CubeSense1_Enabled'] = (byte_1 >> 4) & 0b11           # 00
-        labeled_data['CubeSense2_Enabled'] = (byte_1 >> 6) & 0b11           # 01
+        labeled_data['ADCS_Run_Mode'] = byte_1 & 0b1                      
+        labeled_data['ASGP4_Mode'] = (byte_1 >> 1) & 0b1                   
+        labeled_data['CubeControl_Signal_Enabled'] = (byte_1 >> 2) & 0b1    
+        labeled_data['CubeControl_Motor_Enabled'] = (byte_1 >> 3) & 0b1    
+        labeled_data['CubeSense1_Enabled'] = (byte_1 >> 4) & 0b11       
+        labeled_data['CubeSense2_Enabled'] = (byte_1 >> 6) & 0b11         
 
-        # Bits 16-23
-        # 01 00 10 11
-        labeled_data['CubeWheel1_Enabled'] = byte_2 & 0b1                   # 1
-        labeled_data['CubeWheel2_Enabled'] = (byte_2 >> 1) & 0b1            # 1
-        labeled_data['CubeWheel3_Enabled'] = (byte_2 >> 2) & 0b1            # 0
-        labeled_data['CubeStar_Enabled'] = (byte_2 >> 3) & 0b1              # 1
-        labeled_data['GPS_Receiver_Enabled'] = (byte_2 >> 4) & 0b1          # 0
-        labeled_data['GPS_LNA_Power_Enabled'] = (byte_2 >> 5) & 0b1         # 0
-        labeled_data['Motor_Driver_Enabled'] = (byte_2 >> 6) & 0b1          # 1
-        labeled_data['Sun_is_Above_Local_Horizon'] = (byte_2 >> 7) & 0b1    # 0
+        labeled_data['CubeWheel1_Enabled'] = byte_2 & 0b1                  
+        labeled_data['CubeWheel2_Enabled'] = (byte_2 >> 1) & 0b1           
+        labeled_data['CubeWheel3_Enabled'] = (byte_2 >> 2) & 0b1           
+        labeled_data['CubeStar_Enabled'] = (byte_2 >> 3) & 0b1            
+        labeled_data['GPS_Receiver_Enabled'] = (byte_2 >> 4) & 0b1          
+        labeled_data['GPS_LNA_Power_Enabled'] = (byte_2 >> 5) & 0b1         
+        labeled_data['Motor_Driver_Enabled'] = (byte_2 >> 6) & 0b1          
+        labeled_data['Sun_is_Above_Local_Horizon'] = (byte_2 >> 7) & 0b1    
 
-        # Bits 24-31
-        # 01 00 10 11
-        labeled_data['CubeSense1_Communications_Error'] = byte_3 & 0b1                  # 1
-        labeled_data['CubeSense2_Communications_Error'] = (byte_3 >> 1) & 0b1           # 1
-        labeled_data['CubeControl_Signal_Communications_Error'] = (byte_3 >> 2) & 0b1   # 0
-        labeled_data['CubeControl_Motor_Communications_Error'] = (byte_3 >> 3) & 0b1    # 1
-        labeled_data['CubeWheel1_Communications_Error'] = (byte_3 >> 4) & 0b1           # 0
-        labeled_data['CubeWheel2_Communications_Error'] = (byte_3 >> 5) & 0b1           # 0
-        labeled_data['CubeWheel3_Communications_Error'] = (byte_3 >> 6) & 0b1           # 1
-        labeled_data['CubeStar_Communications_Error'] = (byte_3 >> 7) & 0b1             # 0
+        labeled_data['CubeSense1_Communications_Error'] = byte_3 & 0b1                 
+        labeled_data['CubeSense2_Communications_Error'] = (byte_3 >> 1) & 0b1       
+        labeled_data['CubeControl_Signal_Communications_Error'] = (byte_3 >> 2) & 0b1  
+        labeled_data['CubeControl_Motor_Communications_Error'] = (byte_3 >> 3) & 0b1    
+        labeled_data['CubeWheel1_Communications_Error'] = (byte_3 >> 4) & 0b1          
+        labeled_data['CubeWheel2_Communications_Error'] = (byte_3 >> 5) & 0b1        
+        labeled_data['CubeWheel3_Communications_Error'] = (byte_3 >> 6) & 0b1        
+        labeled_data['CubeStar_Communications_Error'] = (byte_3 >> 7) & 0b1            
 
-        # Bits 32-39
-        # 01 00 10 11
-        labeled_data['Magnetometer_Range_Error'] = byte_4 & 0b1                 # 1
-        labeled_data['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    # 1
-        labeled_data['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 2) & 0b1     # 0
-        labeled_data['Cam1_Sensor_Busy_Error'] = (byte_4 >> 3) & 0b1            # 1
-        labeled_data['Cam1_Sensor_Detection_Error'] = (byte_4 >> 4) & 0b1       # 0
-        labeled_data['Sun_Sensor_Range_Error'] = (byte_4 >> 5) & 0b1            # 0
-        labeled_data['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1    # 1
-        labeled_data['Cam2_3V3_Overcurrent_Detected'] = (byte_4 >> 7) & 0b1     # 0
+        labeled_data['Magnetometer_Range_Error'] = byte_4 & 0b1                 
+        labeled_data['Cam1_SRAM_Overcurrent_Detected'] = (byte_4 >> 1) & 0b1    
+        labeled_data['Cam1_3V3_Overcurrent_Detected'] = (byte_4 >> 2) & 0b1     
+        labeled_data['Cam1_Sensor_Busy_Error'] = (byte_4 >> 3) & 0b1          
+        labeled_data['Cam1_Sensor_Detection_Error'] = (byte_4 >> 4) & 0b1     
+        labeled_data['Sun_Sensor_Range_Error'] = (byte_4 >> 5) & 0b1           
+        labeled_data['Cam2_SRAM_Overcurrent_Detected'] = (byte_4 >> 6) & 0b1   
+        labeled_data['Cam2_3V3_Overcurrent_Detected'] = (byte_4 >> 7) & 0b1     
 
-        # Bits 40-47
-        # 01 00 10 11
-        labeled_data['Cam2_Sensor_Busy_Error'] = byte_5 & 0b1                   # 1
-        labeled_data['Cam2_Sensor_Detection_Error'] = (byte_5 >> 1) & 0b1       # 1
-        labeled_data['Nadir_Sensor_Range_Error'] = (byte_5 >> 2) & 0b1          # 0
-        labeled_data['Rate_Sensor_Range_Error'] = (byte_5 >> 3) & 0b1           # 1
-        labeled_data['Wheel_Speed_Range_Error'] = (byte_5 >> 4) & 0b1           # 0
-        labeled_data['Coarse_Sun_Sensor_Error'] = (byte_5 >> 5) & 0b1           # 0
-        labeled_data['StarTracker_Match_Error'] = (byte_5 >> 6) & 0b1           # 1
-        labeled_data['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  # 0
+        labeled_data['Cam2_Sensor_Busy_Error'] = byte_5 & 0b1                   
+        labeled_data['Cam2_Sensor_Detection_Error'] = (byte_5 >> 1) & 0b1       
+        labeled_data['Nadir_Sensor_Range_Error'] = (byte_5 >> 2) & 0b1          
+        labeled_data['Rate_Sensor_Range_Error'] = (byte_5 >> 3) & 0b1           
+        labeled_data['Wheel_Speed_Range_Error'] = (byte_5 >> 4) & 0b1           
+        labeled_data['Coarse_Sun_Sensor_Error'] = (byte_5 >> 5) & 0b1           
+        labeled_data['StarTracker_Match_Error'] = (byte_5 >> 6) & 0b1           
+        labeled_data['StarTracker_Overcurrent_Detected'] = (byte_5 >> 7) & 0b1  
 
         return labeled_data
-
 
     @staticmethod
     def parse_eps_0(data: bytes):
@@ -617,7 +620,6 @@ class BeaconMsg:
             labeled_data[key] = value 
         
         return labeled_data
-            
 
     @staticmethod
     def parse_sensor_coarse_sun(data: bytes):
@@ -639,7 +641,6 @@ class BeaconMsg:
             labeled_data[key] = value 
         
         return labeled_data
-
 
     @staticmethod
     def parse_es_adcs_sensor_mag(data: bytes):
@@ -848,6 +849,10 @@ class BeaconMsg:
         return str_repr
 
 
+# @brief Represents the structure of a beacon header.
+#
+# @details Private class used by the Beacon class to parse beacon headers.
+#          For each beacon, a new instance of BeaconHeader is created.
 
 class BeaconHeader:
     HEADER_SIZE = 7
@@ -880,7 +885,12 @@ class BeaconHeader:
         return f"\n\nBeaconHeader> Beacon Consecutive Number: {hex(self.beacon_consecutive_number)} | UHF Address: {hex(self.uhf_address)} | Flag A: {hex(self.flag_a)} | OBC Address: {hex(self.obc_address)} | Data ID: {hex(self.data_id)} | Flag B: {hex(self.flag_b)} | Flag C: {hex(self.flag_c)}"
 
 
-
+# @brief Represents the structure of an entire beacon.
+#
+# @details Public class used to parse beacons. Each output line of the
+#          spacecomms interface script corresponds to a new beacon. So,
+#          for each output line received from the spacecomms script, a
+#          new instance of this class is created. 
 
 class Beacon:
     BEACON_SIZE = 77
@@ -910,8 +920,15 @@ class Beacon:
 
             self.current_pos += msg.header.msg_length
             
-            self.msg_list.append(msg)
-            
+            self.msg_list.append(msg)  
+
+
+# @brief Main function to listen for and process beacon messages.
+# 
+# @details This script listens for beacon messages from the spacecomms interface, parses the received data, 
+#          and organizes it into complete messages. If a partial message is detected, it waits for the remaining 
+#          data to complete the message. The complete messages are labeled and added to the message list, and each
+#          complete message is printed.
 
 if __name__ == '__main__':
     root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
