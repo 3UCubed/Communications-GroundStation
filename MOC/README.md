@@ -127,6 +127,7 @@ MOC/
 
 
 ## beacon_parser/
+###  NOTE: This is deprecated, I stopped updating it some time ago.
 ### Description
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Contains two seperate projects: one for parsing .bin files containing beacons, and one for parsing beacons in real time.
 
