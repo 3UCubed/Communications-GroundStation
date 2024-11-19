@@ -10,6 +10,7 @@ import subprocess
 import os
 from struct import unpack_from
 from itertools import islice
+from pymongo import MongoClient
 
 
 # @brief Executes a command and yields its output line by line.
@@ -174,7 +175,7 @@ class BeaconMsg:
     def parse_other(data: bytes):
         labeled_data = {}
         for key, value in enumerate(data):
-            labeled_data[key] = value
+            labeled_data[f"{key}"] = value
         return labeled_data
 
     @staticmethod
@@ -910,6 +911,10 @@ class Beacon:
             msg_header_data = self.data[self.current_pos:self.current_pos + BeaconMsgHeader.MSG_HEADER_SIZE]
             msg.header.parse(msg_header_data)
             self.current_pos += BeaconMsgHeader.MSG_HEADER_SIZE
+
+            if msg.header.dc_id == 'Unknown':
+                break
+
             if self.current_pos + msg.header.msg_length > Beacon.BEACON_SIZE:
                 msg_data = self.data[self.current_pos:Beacon.BEACON_SIZE]
                 msg.parse(msg_data)
@@ -935,6 +940,11 @@ if __name__ == '__main__':
     spacecomms_interface_path = os.path.join(root, "spacecomms_interface", "spacecomms_interface.py")
     beacon_listen_start_cmd = 3
     
+    mongodb_uri = 'mongodb://localhost:27017'
+    client = MongoClient(mongodb_uri)
+    db = client['data']
+    collection = db['beacons']
+
     cmplt_msg_list = []
     partial_msg = None
     complete_msg = None
@@ -956,6 +966,7 @@ if __name__ == '__main__':
             complete_msg.label()
             cmplt_msg_list.append(complete_msg)
             print(cmplt_msg_list[-1])
+
             # Add all other complete messages to the message list
             for i in range(1, len(new_beacon.msg_list)):
                 if new_beacon.msg_list[i].partial == False:
@@ -982,5 +993,15 @@ if __name__ == '__main__':
         # Otherwise, set partial_message to none
         else:
             partial_msg = None
+        
+        if len(cmplt_msg_list) >= 10:
+            for msg in cmplt_msg_list:
+                insert_result = collection.insert_one(msg.labeled_data)
+                if insert_result.acknowledged:
+                    print("Insertion Complete")
+                else:
+                    print("Insertion Failed")
+            cmplt_msg_list.clear()
+
 
         
