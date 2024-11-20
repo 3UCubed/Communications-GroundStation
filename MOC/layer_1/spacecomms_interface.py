@@ -8,10 +8,10 @@
  ##############################################################################
 
 
-from client_apps.OBCClientApp import FP_API_OBC
-from web_socket_api.CommandProtocol import send_command
-from web_socket_api.constants import SatelliteId, CommandType, TripType, ModuleMac, RadioConfiguration, EncyptionKey
-from web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key, start_beacon_listening
+from layer_1.client_apps.OBCClientApp import FP_API_OBC
+from layer_1.web_socket_api.CommandProtocol import send_command
+from layer_1.web_socket_api.constants import SatelliteId, CommandType, TripType, ModuleMac, RadioConfiguration, EncyptionKey
+from layer_1.web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key, start_beacon_listening, stop_beacon_listening
 import logging
 import re
 import os
@@ -24,6 +24,8 @@ import sys
 obc_api = FP_API_OBC()
 
 
+
+
 # @brief Retrieves the uptime of the satellite.
 # 
 # @details This function sends a request to the OBC to get the satellite's uptime,
@@ -32,10 +34,11 @@ obc_api = FP_API_OBC()
 # @return None
 
 def get_uptime():
-    serialized_request = list(obc_api.req_getUptime())
-    serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
-    parsed_response = obc_api.resp_getUptime(serialized_response)
-    logging.info(vars(parsed_response["s__upTime"]))
+    # serialized_request = list(obc_api.req_getUptime())
+    # serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
+    # parsed_response = obc_api.resp_getUptime(serialized_response)
+    # logging.info(vars(parsed_response["s__upTime"]))
+    return f"{__name__}: Uptime: 17833"
 
 
 # @brief Downloads a file from the onboard computer.
@@ -105,63 +108,54 @@ def get_filenames():
 # @return None
 
 def download_telemetry_files():
-    print("Downloading dirlist...")
-    download_file("DIRLIST.TXT")
+    # print("Downloading dirlist...")
+    # download_file("DIRLIST.TXT")
 
-    filenames = get_filenames()
-    number_of_files = len(filenames)
-    current_file_number = 1
-    missed_files = []
-    total_time_start = time.perf_counter()
-    for file in filenames:
-        start_time = time.perf_counter()
-        print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
-        status = download_file(file)
-        retries = 0
+    # filenames = get_filenames()
+    # number_of_files = len(filenames)
+    # current_file_number = 1
+    # missed_files = []
+    # total_time_start = time.perf_counter()
+    # for file in filenames:
+    #     start_time = time.perf_counter()
+    #     print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
+    #     status = download_file(file)
+    #     retries = 0
 
-        while retries < 10 and status == 0:
-            retries += 1
-            print(f"Problem downloading file, retry #{retries}")
-            time.sleep(5)
-            status = download_file(file)
+    #     while retries < 10 and status == 0:
+    #         retries += 1
+    #         print(f"Problem downloading file, retry #{retries}")
+    #         time.sleep(5)
+    #         status = download_file(file)
 
-        if status == 0:
-            missed_files.append(file)
+    #     if status == 0:
+    #         missed_files.append(file)
 
-        current_file_number += 1
-        end_time = time.perf_counter()
-        elapsed_time = round(end_time - start_time)
-        print(f"Process took {elapsed_time} seconds.")
-    total_time_end = time.perf_counter()
-    total_elapsed_time = round(total_time_end - total_time_start)
-    print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
-    print("Missed files: ", end="")
-    print(', '.join(missed_files))
+    #     current_file_number += 1
+    #     end_time = time.perf_counter()
+    #     elapsed_time = round(end_time - start_time)
+    #     print(f"Process took {elapsed_time} seconds.")
+    # total_time_end = time.perf_counter()
+    # total_elapsed_time = round(total_time_end - total_time_start)
+    # print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
+    # print("Missed files: ", end="")
+    # print(', '.join(missed_files))
+    return f"{__name__}: Downloaded TLM"
     
 
-# @brief Main entry point for the script to initialize the radio and execute commands.
-# 
-# @details This function sets up logging, initializes the radio, and processes command-line arguments to
-#          execute specific functions based on the provided command. Valid commands include:
-#          - "1": Retrieves the uptime.
-#          - "2": Downloads telemetry files.
-#          - "3": Starts beacon listening.
-#          If no valid command is provided, the script exits.
-# 
-# @return None
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    init_radio()
+COMMANDS = {
+     "GET_UPTIME": get_uptime,
+     "DOWNLOAD_TELEMETRY": download_telemetry_files,
+     "START_BEACON_LISTENING": start_beacon_listening,
+     "STOP_BEACON_LISTENING": stop_beacon_listening
+}
 
-    if len(sys.argv) > 1:
-        cmd = sys.argv[1]
-
-    if cmd == "1":
-        get_uptime()
-    elif cmd == "2":
-        download_telemetry_files()
-    elif cmd == "3":
-        start_beacon_listening()
-    else:
-        exit(0)
+def spacecomms_req_handler(req_queue, resp_queue):
+    while True:
+        req = req_queue.get()
+        if req in COMMANDS:
+            resp = COMMANDS[req]()
+            resp_queue.put(resp)
+        else:
+            resp_queue.put(f"{__name__}: Unknown Command")

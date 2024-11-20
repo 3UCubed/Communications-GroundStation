@@ -1,7 +1,7 @@
 import base64
 import logging
 import random
-from web_socket_client import WebSocketClient
+from layer_1.web_socket_client import WebSocketClient
 
 # JSON Message CPCommand
 CP = {

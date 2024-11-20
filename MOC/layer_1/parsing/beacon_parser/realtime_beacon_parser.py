@@ -10,7 +10,6 @@ import subprocess
 import os
 from struct import unpack_from
 from itertools import islice
-from pymongo import MongoClient
 
 
 # @brief Executes a command and yields its output line by line.
@@ -939,11 +938,6 @@ if __name__ == '__main__':
     root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     spacecomms_interface_path = os.path.join(root, "spacecomms_interface", "spacecomms_interface.py")
     beacon_listen_start_cmd = 3
-    
-    mongodb_uri = 'mongodb://localhost:27017'
-    client = MongoClient(mongodb_uri)
-    db = client['data']
-    collection = db['beacons']
 
     cmplt_msg_list = []
     partial_msg = None
@@ -994,14 +988,6 @@ if __name__ == '__main__':
         else:
             partial_msg = None
         
-        if len(cmplt_msg_list) >= 10:
-            for msg in cmplt_msg_list:
-                insert_result = collection.insert_one(msg.labeled_data)
-                if insert_result.acknowledged:
-                    print("Insertion Complete")
-                else:
-                    print("Insertion Failed")
-            cmplt_msg_list.clear()
 
 
         
