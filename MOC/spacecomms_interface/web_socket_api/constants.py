@@ -25,7 +25,7 @@ class ModuleMac():
 
 class EncyptionKey():
     AES_IV = "AAECAwQFBgcICQoLDA0ODw=="
-    AES_KEY = "aYMnG/fdSKZfOs7EM8rZJaQyvDIn+Hc02ddqqytotvE="
+    AES_KEY = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     # Note: The following is the hex version of the key the line above (which is base64 encoded)
     # "6983271bf7dd48a65f3acec433cad925a432bc3227f87734d9d76aab2b68b6f1"
     # This is what is fed into SpacePY UHF WriteCipherSlot
@@ -35,5 +35,5 @@ class EncyptionKey():
 class RadioConfiguration():
     SBAND_UPLINK_FREQUENCY = 2102500000
     SBAND_DOWNLINK_FREQUENCY = 2277500000
-    UHF_UPLINK_FREQUENCY = 436000000
-    UHF_DOWNLINK_FREQUENCY = 435000000
+    UHF_UPLINK_FREQUENCY = 435000000
+    UHF_DOWNLINK_FREQUENCY = 436500000
