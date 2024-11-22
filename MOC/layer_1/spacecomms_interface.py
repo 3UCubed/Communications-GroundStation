@@ -34,11 +34,11 @@ obc_api = FP_API_OBC()
 # @return None
 
 def get_uptime():
-    # serialized_request = list(obc_api.req_getUptime())
-    # serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
-    # parsed_response = obc_api.resp_getUptime(serialized_response)
-    # logging.info(vars(parsed_response["s__upTime"]))
-    return f"{__name__}: Uptime: 17833"
+    serialized_request = list(obc_api.req_getUptime())
+    serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
+    parsed_response = obc_api.resp_getUptime(serialized_response)
+    logging.info(vars(parsed_response["s__upTime"]))
+    return parsed_response
 
 
 # @brief Downloads a file from the onboard computer.
