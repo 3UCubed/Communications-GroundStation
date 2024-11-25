@@ -927,47 +927,36 @@ class Beacon:
             self.msg_list.append(msg)  
 
 
-# @brief Main function to listen for and process beacon messages.
-# 
-# @details This script listens for beacon messages from the spacecomms interface, parses the received data, 
-#          and organizes it into complete messages. If a partial message is detected, it waits for the remaining 
-#          data to complete the message. The complete messages are labeled and added to the message list, and each
-#          complete message is printed.
-
-def parse(raw_beacon_queue, parsed_beacon_queue, parsing_beacons):
-    cmplt_msg_list = []
-    partial_msg = None
-    complete_msg = None
-
-    while parsing_beacons.is_set():
-
-        if not raw_beacon_queue.empty():
-            byte_data = raw_beacon_queue.get()
-        else:
-            continue
-
+class Beacon_Parser:
+    def __init__(self, resp_queue):
+        self.resp_queue = resp_queue
+        self.cmplt_msg_list = []
+        self.partial_msg = None
+        self.complete_msg = None
+    
+    def parse_beacon(self, data):
         # Create and parse new beacon
-        new_beacon = Beacon(byte_data)
+        new_beacon = Beacon(data)
         new_beacon.parse()
-        
+
         # Check if the previous message was partial
-        if partial_msg is not None:
+        if self.partial_msg is not None:
             # If so, set complete message to partial message and add the data of the new message
-            complete_msg = partial_msg
-            complete_msg.data += new_beacon.msg_list[0].data
+            self.complete_msg = self.partial_msg
+            self.complete_msg.data += new_beacon.msg_list[0].data
 
             # Add the newly completed message to the message list
-            complete_msg.label()
-            cmplt_msg_list.append(complete_msg)
-            parsed_beacon_queue.put(cmplt_msg_list[-1])
+            self.complete_msg.label()
+            self.cmplt_msg_list.append(self.complete_msg)
+            self.resp_queue.put(self.cmplt_msg_list[-1])
 
             # Add all other complete messages to the message list
             for i in range(1, len(new_beacon.msg_list)):
                 if new_beacon.msg_list[i].partial == False:
-                    complete_msg = new_beacon.msg_list[i]
-                    complete_msg.label()
-                    cmplt_msg_list.append(complete_msg)
-                    parsed_beacon_queue.put(cmplt_msg_list[-1])
+                    self.complete_msg = new_beacon.msg_list[i]
+                    self.complete_msg.label()
+                    self.cmplt_msg_list.append(self.complete_msg)
+                    self.resp_queue.put(self.cmplt_msg_list[-1])
 
 
         # If previous message wasn't partial...
@@ -975,19 +964,19 @@ def parse(raw_beacon_queue, parsed_beacon_queue, parsing_beacons):
             # Add all complete messages to the list
             for i in range(0, len(new_beacon.msg_list)):
                 if new_beacon.msg_list[i].partial == False:
-                    complete_msg = new_beacon.msg_list[i]
-                    complete_msg.label()
-                    cmplt_msg_list.append(complete_msg)
-                    parsed_beacon_queue.put(cmplt_msg_list[-1])
+                    self.complete_msg = new_beacon.msg_list[i]
+                    self.complete_msg.label()
+                    self.cmplt_msg_list.append(self.complete_msg)
+                    self.resp_queue.put(self.cmplt_msg_list[-1])
 
         if len(new_beacon.msg_list) > 0:
             # If the final message in the beacon message list is partial...
             if new_beacon.msg_list[-1].partial == True:
                 # Set partial_msg to the final message in the beacon message list
-                partial_msg = new_beacon.msg_list[-1]
+                self.partial_msg = new_beacon.msg_list[-1]
 
             # Otherwise, set partial_message to none
             else:
-                partial_msg = None
+                self.partial_msg = None
+
         
-    print("Stopped parsing beacons", flush=True)

@@ -13,7 +13,7 @@ from layer_1.web_socket_api.CommandProtocol import send_command
 from layer_1.web_socket_api.constants import SatelliteId, CommandType, TripType, ModuleMac, RadioConfiguration, EncyptionKey
 from layer_1.web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key
 from layer_1.web_socket_client import WebSocketClient
-from layer_1.parsing.beacon_parser.realtime_beacon_parser import parse
+from layer_1.parsing.beacon_parser.realtime_beacon_parser import Beacon_Parser
 
 import logging
 import re
@@ -203,7 +203,7 @@ class SPACECOMMS_INTERFACE_API:
 
     def start_beacon_listening(self):
         self.listening_for_beacons.set()
- 
+        beacon_parser = Beacon_Parser(self.resp_queue)
 
         message = BEACON_LISTEN
         listen_id = message["id"]
@@ -219,8 +219,7 @@ class SPACECOMMS_INTERFACE_API:
                     print("Mismatched ID's for beacon request")
                 frame = response["ax25Frame"]
                 decoded_frame = base64.b64decode(frame)
-
-                self.resp_queue.put(decoded_frame)
+                beacon_parser.parse_beacon(decoded_frame)
             elif response.get("type") == "Error":
                 logging.error("%s", response)
                 exit(0)
