@@ -11,12 +11,32 @@
 from layer_1.client_apps.OBCClientApp import FP_API_OBC
 from layer_1.web_socket_api.CommandProtocol import send_command
 from layer_1.web_socket_api.constants import SatelliteId, CommandType, TripType, ModuleMac, RadioConfiguration, EncyptionKey
-from layer_1.web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key, start_beacon_listening, stop_beacon_listening
+from layer_1.web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key
+from layer_1.web_socket_client import WebSocketClient
+from layer_1.parsing.beacon_parser.realtime_beacon_parser import parse
+
 import logging
 import re
 import os
+import random
+import threading
+import base64
+from queue import Queue
 import time
-import sys
+
+
+# JSON Message BeaconListen
+BEACON_LISTEN = {
+    "id": random.randint(0, 9999),
+    "type": "BeaconListen"
+}
+
+# JSON Message Beacon
+BEACON = {
+    "ax25Frame": [0] * 256,
+    "requestId": 0,
+    "type": "Beacon"
+}
 
 
 # @brief Sets up API used for interfacing with the OBC
@@ -26,19 +46,7 @@ obc_api = FP_API_OBC()
 
 
 
-# @brief Retrieves the uptime of the satellite.
-# 
-# @details This function sends a request to the OBC to get the satellite's uptime,
-#          waits for the response, parses it, and logs the parsed uptime value.
-# 
-# @return None
 
-def get_uptime():
-    serialized_request = list(obc_api.req_getUptime())
-    serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
-    parsed_response = obc_api.resp_getUptime(serialized_response)
-    logging.info(vars(parsed_response["s__upTime"]))
-    return parsed_response
 
 
 # @brief Downloads a file from the onboard computer.
@@ -144,18 +152,85 @@ def download_telemetry_files():
     
 
 
-COMMANDS = {
-     "GET_UPTIME": get_uptime,
-     "DOWNLOAD_TELEMETRY": download_telemetry_files,
-     "START_BEACON_LISTENING": start_beacon_listening,
-     "STOP_BEACON_LISTENING": stop_beacon_listening
-}
 
-def spacecomms_req_handler(req_queue, resp_queue):
-    while True:
-        req = req_queue.get()
-        if req in COMMANDS:
-            resp = COMMANDS[req]()
-            resp_queue.put(resp)
+
+
+
+class SPACECOMMS_INTERFACE_API:
+    def __init__(self, resp_queue):
+        self.resp_queue = resp_queue
+        self.accepted_commands = {
+            'uptime': self.get_uptime,
+            'start_beacon': self.start_beacon_listening,
+            'stop_beacon': self.stop_beacon_listening,
+            'shutdown': self.cleanup
+        }
+        self.listening_for_beacons = threading.Event()
+        self.threads = {}
+
+    def command_handler(self, command):
+        if command in self.accepted_commands:
+            print(f"Received Command {command}")
+            if command == "shutdown":
+                self.cleanup()
+            else:
+                command_thread = threading.Thread(target=self.accepted_commands[command])
+                self.threads[command] = command_thread
+                command_thread.start()
         else:
-            resp_queue.put(f"{__name__}: Unknown Command")
+            self.resp_queue.put("UNKNOWN COMMAND")
+
+
+    def cleanup(self):
+        self.listening_for_beacons.clear()
+        for command, thread in self.threads.items():
+            thread.join()
+            print(f"{command} has been gracefully shut down")
+        
+        self.threads.clear()
+        print("All tasks shut down")
+            
+
+    def get_uptime(self):
+        serialized_request = list(obc_api.req_getUptime())
+        serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
+        parsed_response = obc_api.resp_getUptime(serialized_response)
+
+        self.resp_queue.put(vars(parsed_response["s__upTime"]))
+        print("GET_UPTIME stopped")
+
+
+
+    def start_beacon_listening(self):
+        self.listening_for_beacons.set()
+ 
+
+        message = BEACON_LISTEN
+        listen_id = message["id"]
+        client = WebSocketClient.WebSocketClient(enableSSL=False)
+        client.send(payload_dict=message)
+        while self.listening_for_beacons.is_set():
+
+            
+            response = {}
+            response = client.readResponse()
+            if response.get("type") == "Beacon":
+                if listen_id != response.get("requestId"):
+                    print("Mismatched ID's for beacon request")
+                frame = response["ax25Frame"]
+                decoded_frame = base64.b64decode(frame)
+
+                self.resp_queue.put(decoded_frame)
+            elif response.get("type") == "Error":
+                logging.error("%s", response)
+                exit(0)
+        client.close()
+        print("START_BEACON_LISTENING stopped")
+
+    def stop_beacon_listening(self):
+        self.listening_for_beacons.clear()
+        print("STOP_BEACON_LISTENING stopped")
+    
+            
+
+

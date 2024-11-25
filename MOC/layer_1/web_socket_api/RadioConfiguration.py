@@ -1,8 +1,6 @@
 import logging
 import random
 from layer_1.web_socket_client import WebSocketClient
-import os
-import base64
 import threading
 
 beacon_listening_event = threading.Event()
@@ -30,19 +28,6 @@ RADIO_CONN = {
     "id": random.randint(0, 9999),
     "remoteRadioMac": 0,
     "type": "RadioConn"
-}
-
-# JSON Message BeaconListen
-BEACON_LISTEN = {
-    "id": random.randint(0, 9999),
-    "type": "BeaconListen"
-}
-
-# JSON Message Beacon
-BEACON = {
-    "ax25Frame": [0] * 256,
-    "requestId": 0,
-    "type": "Beacon"
 }
 
 def update_aes_key(aesIV: str, aesKey: str):
@@ -86,31 +71,4 @@ def set_radio_address(remoteRadioMac: int):
             logging.error("%s", response)
             exit(0)
 
-def start_beacon_listening():
-    # beacon_listening_event.clear()
-    # current_dir = os.path.dirname(__file__)
-    # parent_dir = os.path.dirname(current_dir)
-    # filepath = os.path.join(parent_dir, "raw_beacons", "raw_beacons.bin")
 
-    # message = BEACON_LISTEN
-    # listen_id = message["id"]
-    # client = WebSocketClient.WebSocketClient(enableSSL=False)
-    # client.send(payload_dict=message)
-    # with open(filepath, "wb") as file:
-    #     while not beacon_listening_event.is_set():
-    #         response = {}
-    #         response = client.readResponse()
-    #         if response.get("type") == "Beacon":
-    #             if listen_id != response.get("requestId"):
-    #                 print("Mismatched ID's for beacon request")
-    #             frame = response["ax25Frame"]
-    #             decoded_frame = base64.b64decode(frame)
-    #             print(''.join(f'{byte:02x}' for byte in decoded_frame), flush=True)
-    #         elif response.get("type") == "Error":
-    #             logging.error("%s", response)
-    #             exit(0)
-    return f"{__name__}: Starting beacon listening"
-
-def stop_beacon_listening():
-    # beacon_listening_event.set()
-    return f"{__name__}: Stopping beacon listening"
