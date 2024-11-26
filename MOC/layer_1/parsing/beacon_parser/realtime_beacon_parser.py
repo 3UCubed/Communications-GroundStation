@@ -948,7 +948,7 @@ class Beacon_Parser:
             # Add the newly completed message to the message list
             self.complete_msg.label()
             self.cmplt_msg_list.append(self.complete_msg)
-            self.resp_queue.put(self.cmplt_msg_list[-1])
+            self.resp_queue.put(self.cmplt_msg_list[-1].labeled_data)
 
             # Add all other complete messages to the message list
             for i in range(1, len(new_beacon.msg_list)):
@@ -956,7 +956,7 @@ class Beacon_Parser:
                     self.complete_msg = new_beacon.msg_list[i]
                     self.complete_msg.label()
                     self.cmplt_msg_list.append(self.complete_msg)
-                    self.resp_queue.put(self.cmplt_msg_list[-1])
+                    self.resp_queue.put(self.cmplt_msg_list[-1].labeled_data)
 
 
         # If previous message wasn't partial...
@@ -967,7 +967,7 @@ class Beacon_Parser:
                     self.complete_msg = new_beacon.msg_list[i]
                     self.complete_msg.label()
                     self.cmplt_msg_list.append(self.complete_msg)
-                    self.resp_queue.put(self.cmplt_msg_list[-1])
+                    self.resp_queue.put(self.cmplt_msg_list[-1].labeled_data)
 
         if len(new_beacon.msg_list) > 0:
             # If the final message in the beacon message list is partial...

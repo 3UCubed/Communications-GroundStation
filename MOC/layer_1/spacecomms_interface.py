@@ -44,11 +44,6 @@ BEACON = {
 obc_api = FP_API_OBC()
 
 
-
-
-
-
-
 # @brief Downloads a file from the onboard computer.
 # 
 # @details This function sends a file download request to the onboard computer (OBC) using the provided 
@@ -107,50 +102,6 @@ def get_filenames(pattern):
     return filenames
 
 
-# @brief Downloads telemetry files listed in DIRLIST.TXT.
-# 
-# @details This function downloads the DIRLIST.TXT file, extracts the filenames of the telemetry files,
-#          and attempts to download each file. If a download fails, it retries up to 10 times before marking
-#          the file as missed. The function also tracks the time taken for each file and the overall download process.
-# 
-# @return None
-
-def download_telemetry_files():
-    # print("Downloading dirlist...")
-    # download_file("DIRLIST.TXT")
-    # regex_pattern = "\d{5}.TLM"
-    # filenames = get_filenames(regex_pattern)
-    # number_of_files = len(filenames)
-    # current_file_number = 1
-    # missed_files = []
-    # total_time_start = time.perf_counter()
-    # for file in filenames:
-    #     start_time = time.perf_counter()
-    #     print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
-    #     status = download_file(file)
-    #     retries = 0
-
-    #     while retries < 10 and status == 0:
-    #         retries += 1
-    #         print(f"Problem downloading file, retry #{retries}")
-    #         time.sleep(5)
-    #         status = download_file(file)
-
-    #     if status == 0:
-    #         missed_files.append(file)
-
-    #     current_file_number += 1
-    #     end_time = time.perf_counter()
-    #     elapsed_time = round(end_time - start_time)
-    #     print(f"Process took {elapsed_time} seconds.")
-    # total_time_end = time.perf_counter()
-    # total_elapsed_time = round(total_time_end - total_time_start)
-    # print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
-    # print("Missed files: ", end="")
-    # print(', '.join(missed_files))
-    return f"{__name__}: Downloaded TLM"
-    
-
 def download_instrument_files():
     regex_pattern = "0000[0-2].(?:(?:IHK)|(?:PMT)|(?:ERP))"
     print("Downloading dirlist...")
@@ -185,12 +136,6 @@ def download_instrument_files():
     print("Missed files: ", end="")
     print(', '.join(missed_files))
 
-if __name__ == "__main__":
-    print("Program Start")
-    download_instrument_files()
-
-
-
 
 class SPACECOMMS_INTERFACE_API:
     def __init__(self, resp_queue):
@@ -199,6 +144,7 @@ class SPACECOMMS_INTERFACE_API:
             'uptime': self.get_uptime,
             'start_beacon': self.start_beacon_listening,
             'stop_beacon': self.stop_beacon_listening,
+            'get_telemetry': self.download_telemetry_files,
             'shutdown': self.cleanup
         }
         self.listening_for_beacons = threading.Event()
@@ -216,7 +162,6 @@ class SPACECOMMS_INTERFACE_API:
         else:
             self.resp_queue.put("UNKNOWN COMMAND")
 
-
     def cleanup(self):
         self.listening_for_beacons.clear()
         for command, thread in self.threads.items():
@@ -226,7 +171,6 @@ class SPACECOMMS_INTERFACE_API:
         self.threads.clear()
         print("All tasks shut down")
             
-
     def get_uptime(self):
         serialized_request = list(obc_api.req_getUptime())
         serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
@@ -235,19 +179,14 @@ class SPACECOMMS_INTERFACE_API:
         self.resp_queue.put(vars(parsed_response["s__upTime"]))
         print("GET_UPTIME stopped")
 
-
-
     def start_beacon_listening(self):
         self.listening_for_beacons.set()
         beacon_parser = Beacon_Parser(self.resp_queue)
-
         message = BEACON_LISTEN
         listen_id = message["id"]
         client = WebSocketClient.WebSocketClient(enableSSL=False)
         client.send(payload_dict=message)
         while self.listening_for_beacons.is_set():
-
-            
             response = {}
             response = client.readResponse()
             if response.get("type") == "Beacon":
@@ -266,6 +205,35 @@ class SPACECOMMS_INTERFACE_API:
         self.listening_for_beacons.clear()
         print("STOP_BEACON_LISTENING stopped")
     
-            
+    def download_telemetry_files(self):
+        self.resp_queue.put("Downloading dirlist...")
+        download_file("DIRLIST.TXT")
+        regex_pattern = "\d{5}.TLM"
+        filenames = get_filenames(regex_pattern)
+        number_of_files = len(filenames)
+        current_file_number = 1
+        missed_files = []
+        total_time_start = time.perf_counter()
+        for file in filenames:
+            start_time = time.perf_counter()
+            self.resp_queue.put(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
+            status = download_file(file)
+            retries = 0
+            while retries < 10 and status == 0:
+                retries += 1
+                self.resp_queue.put(f"Problem downloading file, retry #{retries}")
+                time.sleep(5)
+                status = download_file(file)
+            if status == 0:
+                missed_files.append(file)
+            current_file_number += 1
+            end_time = time.perf_counter()
+            elapsed_time = round(end_time - start_time)
+            print(f"Process took {elapsed_time} seconds.")
+        total_time_end = time.perf_counter()
+        total_elapsed_time = round(total_time_end - total_time_start)
+        self.resp_queue.put(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
+        self.resp_queue.put("Missed files: ", end="")
+        self.resp_queue.put(', '.join(missed_files))
 
 
