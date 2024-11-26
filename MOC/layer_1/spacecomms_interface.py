@@ -96,14 +96,14 @@ def init_radio():
 # 
 # @return A list of filenames matching the pattern "\d{5}.TLM".
 
-def get_filenames():
+def get_filenames(pattern):
     filenames = []
-    regex_pattern = "\d{5}.TLM"
+    
     root_dir = os.path.dirname(__file__)
     dirlist_filepath = os.path.join(root_dir, "downloaded_files", "DIRLIST.TXT")
     with open(dirlist_filepath, 'r', encoding='ISO-8859-1') as file:
         dirlist_content = file.read()
-    filenames = re.findall(regex_pattern, dirlist_content)
+    filenames = re.findall(pattern, dirlist_content)
     return filenames
 
 
@@ -118,8 +118,8 @@ def get_filenames():
 def download_telemetry_files():
     # print("Downloading dirlist...")
     # download_file("DIRLIST.TXT")
-
-    # filenames = get_filenames()
+    # regex_pattern = "\d{5}.TLM"
+    # filenames = get_filenames(regex_pattern)
     # number_of_files = len(filenames)
     # current_file_number = 1
     # missed_files = []
@@ -151,7 +151,43 @@ def download_telemetry_files():
     return f"{__name__}: Downloaded TLM"
     
 
+def download_instrument_files():
+    regex_pattern = "0000[0-2].(?:(?:IHK)|(?:PMT)|(?:ERP))"
+    print("Downloading dirlist...")
+    download_file("DIRLIST.TXT")
+    filenames = get_filenames(regex_pattern)
+    number_of_files = len(filenames)
+    current_file_number = 1
+    missed_files = []
+    total_time_start = time.perf_counter()
+    for file in filenames:
+        start_time = time.perf_counter()
+        print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
+        status = download_file(file)
+        retries = 0
 
+        while retries < 10 and status == 0:
+            retries += 1
+            print(f"Problem downloading file, retry #{retries}")
+            time.sleep(5)
+            status = download_file(file)
+
+        if status == 0:
+            missed_files.append(file)
+
+        current_file_number += 1
+        end_time = time.perf_counter()
+        elapsed_time = round(end_time - start_time)
+        print(f"Process took {elapsed_time} seconds.")
+    total_time_end = time.perf_counter()
+    total_elapsed_time = round(total_time_end - total_time_start)
+    print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
+    print("Missed files: ", end="")
+    print(', '.join(missed_files))
+
+if __name__ == "__main__":
+    print("Program Start")
+    download_instrument_files()
 
 
 
