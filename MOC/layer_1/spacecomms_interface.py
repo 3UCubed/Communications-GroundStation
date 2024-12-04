@@ -219,7 +219,7 @@ class SPACECOMMS_INTERFACE_API:
         print("STOP_BEACON_LISTENING stopped")
     
     def download_telemetry_files(self):
-        self.resp_queue.put("Downloading dirlist...")
+        print("Downloading dirlist...")
         download_file("DIRLIST.TXT")
         regex_pattern = "\d{5}.TLM"
         filenames = get_filenames(regex_pattern)
@@ -229,12 +229,12 @@ class SPACECOMMS_INTERFACE_API:
         total_time_start = time.perf_counter()
         for file in filenames:
             start_time = time.perf_counter()
-            self.resp_queue.put(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
+            print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
             status = download_file(file)
             retries = 0
             while retries < 10 and status == 0:
                 retries += 1
-                self.resp_queue.put(f"Problem downloading file, retry #{retries}")
+                print(f"Problem downloading file, retry #{retries}")
                 time.sleep(5)
                 status = download_file(file)
             if status == 0:
@@ -245,8 +245,8 @@ class SPACECOMMS_INTERFACE_API:
             print(f"Process took {elapsed_time} seconds.")
         total_time_end = time.perf_counter()
         total_elapsed_time = round(total_time_end - total_time_start)
-        self.resp_queue.put(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
-        self.resp_queue.put("Missed files: ", end="")
-        self.resp_queue.put(', '.join(missed_files))
+        print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
+        print("Missed files: ", end="")
+        print(', '.join(missed_files))
 
 

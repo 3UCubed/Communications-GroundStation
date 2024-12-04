@@ -228,6 +228,7 @@ class CSVFiles:
         for msg in self.msglist:
             if len(msg.data) > 0:
                 parsed_data = CSVFiles.parse_msg_data(msg)
+                print(parsed_data, end="\n\n")
                 output_filepath = self.generate_output_filepath(msg)
                 file_exists = os.path.exists(output_filepath)
 
@@ -256,23 +257,26 @@ class CSVFiles:
     def parse_msg_data(msg):
         (data, length) = datacache.dc_parser(NUM_TASKS).parse_by_id(msg.msg_type, msg.data)
         data_dict = data.__dict__
-
+        readable_timestamp = unixtime_to_readable_date(msg.timestamp)
+        parsed_data = {"timestamp": readable_timestamp, "dc_id": CSVFiles.dc_entries_dict[msg.msg_type]}
         if CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_0":
-            data_dict = CSVFiles.parse_adcs_0_vec(data_dict)
+            parsed_data.update(CSVFiles.parse_adcs_0_vec(data_dict))
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_1":
-            data_dict = CSVFiles.parse_adcs_1_vec(data_dict)
+            parsed_data.update(CSVFiles.parse_adcs_1_vec(data_dict))
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_2":
-            data_dict = CSVFiles.parse_adcs_2_vec(data_dict)
+            parsed_data.update(CSVFiles.parse_adcs_2_vec(data_dict))
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "AOCS_CNTRL_TLM":
-            data_dict = CSVFiles.parse_aocs_cntrl_tlm_vec(data_dict)
+            parsed_data.update(CSVFiles.parse_aocs_cntrl_tlm_vec(data_dict))
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "EPS_3": # Hasn't been tested, tlm files don't have this right now
-            data_dict = CSVFiles.parse_eps_3_vec(data_dict)
+            parsed_data.update(CSVFiles.parse_eps_3_vec(data_dict))
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "EPS_4": # Hasn't been tested, tlm files don't have this right now
-            data_dict = CSVFiles.parse_eps_4_vec(data_dict)
+            parsed_data.update(CSVFiles.parse_eps_4_vec(data_dict))
         elif CSVFiles.dc_entries_dict[msg.msg_type] == "TaskStats":
-            data_dict = CSVFiles.parse_taskstats_vec(data_dict)
+            parsed_data.update(CSVFiles.parse_taskstats_vec(data_dict))
+        else:
+            parsed_data.update(data_dict)
 
-        return data_dict
+        return parsed_data
     
     @staticmethod
     def parse_adcs_0_vec(data_dict):
@@ -620,8 +624,6 @@ class CSVFiles:
     @staticmethod
     def append_data(msg, parsed_data, output_filepath):
                 row = []
-                readable_timestamp = unixtime_to_readable_date(msg.timestamp)
-                row.append(readable_timestamp)
 
                 for value in parsed_data.values():
                     row.append(value)
@@ -704,8 +706,9 @@ class TelemetryFile:
 #          the 'csv_files' directory, where the generated CSV files will be stored.
 
 if __name__ == "__main__":
-    root_dir = os.path.dirname(__file__)
-    tlm_file_list = glob.glob(f"{root_dir}/tlm_files/*.TLM")
+    root_dir = os.path.dirname(os.path.dirname((os.path.dirname(__file__))))
+    tlm_file_list = glob.glob(f"{root_dir}/downloaded_files/*.TLM")
+    print(tlm_file_list)
     for file in tlm_file_list:
         try:
             tlm_file = TelemetryFile(file)
