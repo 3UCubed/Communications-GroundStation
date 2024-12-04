@@ -1,15 +1,22 @@
 from layer_1.spacecomms_interface import SPACECOMMS_INTERFACE_API
 from queue import Queue, Empty
 import threading
+from pymongo import MongoClient
 
 resp_queue = Queue()
 spacecomms_interface_api = SPACECOMMS_INTERFACE_API(resp_queue)
+client = MongoClient("mongodb://localhost:27017/")
+database = client["data"]
 
 
 def command_resp_handler():
     while True:
         resp = resp_queue.get()
-        print(resp, flush=True)
+        print(resp, end="\n\n", flush=True)
+        collection = database[resp["type"]]
+        document = resp["data"]
+        insertion_result = collection.insert_one(document)
+        print(f"Insertion result: {insertion_result}")
 
 
 def backend_req_handler():

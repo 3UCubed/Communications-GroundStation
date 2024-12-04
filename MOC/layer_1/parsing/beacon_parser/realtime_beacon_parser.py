@@ -115,60 +115,61 @@ class BeaconMsg:
             self.data.append(byte)
         
     def label(self):
+        self.labeled_data = {"dc_id": self.header.dc_id}
         if self.header.dc_id == "OBC_0":
-            self.labeled_data = BeaconMsg.parse_obc_0(self.data)
+            self.labeled_data.update(BeaconMsg.parse_obc_0(self.data))
         elif self.header.dc_id == "ADCS_0":
-            self.labeled_data = BeaconMsg.parse_adcs_0(self.data)
+            self.labeled_data.update(BeaconMsg.parse_adcs_0(self.data))
         elif self.header.dc_id == "ADCS_1":
-            self.labeled_data = BeaconMsg.parse_adcs_1(self.data)
+            self.labeled_data.update(BeaconMsg.parse_adcs_1(self.data))
         elif self.header.dc_id == "ADCS_2":
-            self.labeled_data = BeaconMsg.parse_adcs_2(self.data)
+            self.labeled_data.update(BeaconMsg.parse_adcs_2(self.data))
         elif self.header.dc_id == "EPS_0":
-            self.labeled_data = BeaconMsg.parse_eps_0(self.data)
+            self.labeled_data.update(BeaconMsg.parse_eps_0(self.data))
         elif self.header.dc_id == "SSP_0" or self.header.dc_id == "SSP_1" or self.header.dc_id == "SSP_2" or self.header.dc_id == "SSP_3":
-            self.labeled_data = BeaconMsg.parse_ssp(self.data)
+            self.labeled_data.update(BeaconMsg.parse_ssp(self.data))
         elif self.header.dc_id == "AOCS_CNTRL_TLM":
-            self.labeled_data = BeaconMsg.parse_aocs_cntrl_tlm(self.data)
+            self.labeled_data.update(BeaconMsg.parse_aocs_cntrl_tlm(self.data))
         elif self.header.dc_id == "EPS_1":
-            self.labeled_data = BeaconMsg.parse_eps_1(self.data)
+            self.labeled_data.update(BeaconMsg.parse_eps_1(self.data))
         elif self.header.dc_id == "EPS_2":
-            self.labeled_data = BeaconMsg.parse_eps_2(self.data)
+            self.labeled_data.update(BeaconMsg.parse_eps_2(self.data))
         elif self.header.dc_id == "EPS_3":
-            self.labeled_data = BeaconMsg.parse_eps_3(self.data)
+            self.labeled_data.update(BeaconMsg.parse_eps_3(self.data))
         elif self.header.dc_id == "EPS_4":
-            self.labeled_data = BeaconMsg.parse_eps_4(self.data)
+            self.labeled_data.update(BeaconMsg.parse_eps_4(self.data))
         elif self.header.dc_id == "EPS_5":
-            self.labeled_data = BeaconMsg.parse_eps_5(self.data)
+            self.labeled_data.update(BeaconMsg.parse_eps_5(self.data))
         elif self.header.dc_id == "EPS_6":
-            self.labeled_data = BeaconMsg.parse_eps_6(self.data)
+            self.labeled_data.update(BeaconMsg.parse_eps_6(self.data))
         elif self.header.dc_id == "TaskStats":
-            self.labeled_data = BeaconMsg.parse_taskstats(self.data)
+            self.labeled_data.update(BeaconMsg.parse_taskstats(self.data))
         elif self.header.dc_id == "SENSOR_MAG_PRIMARY" or self.header.dc_id == 'SENSOR_MAG_SECONDARY':
-            self.labeled_data = BeaconMsg.parse_sensor_mag(self.data)
+            self.labeled_data.update(BeaconMsg.parse_sensor_mag(self.data))
         elif self.header.dc_id == "SENSOR_GYRO":
-            self.labeled_data = BeaconMsg.parse_sensor_gyro(self.data)
+            self.labeled_data.update(BeaconMsg.parse_sensor_gyro(self.data))
         elif self.header.dc_id == "SENSOR_COARSE_SUN":
-            self.labeled_data = BeaconMsg.parse_sensor_coarse_sun(self.data)
+            self.labeled_data.update(BeaconMsg.parse_sensor_coarse_sun(self.data))
         elif self.header.dc_id == "ES_ADCS_SENSOR_MAG_PRIMARY" or self.header.dc_id == "ES_ADCS_SENSOR_MAG_SECONDARY":
-            self.labeled_data = BeaconMsg.parse_es_adcs_sensor_mag(self.data)
+            self.labeled_data.update(BeaconMsg.parse_es_adcs_sensor_mag(self.data))
         elif self.header.dc_id == "ES_ADCS_SENSOR_GYRO":
-            self.labeled_data = BeaconMsg.parse_es_adcs_sensor_gyro(self.data)
+            self.labeled_data.update(BeaconMsg.parse_es_adcs_sensor_gyro(self.data))
         elif self.header.dc_id == "ES_ADCS_SENSOR_CSS":
-            self.labeled_data = BeaconMsg.parse_es_adcs_sensor_css(self.data)
+            self.labeled_data.update(BeaconMsg.parse_es_adcs_sensor_css(self.data))
         elif self.header.dc_id == "ES_ADCS_ESTIMATES_BDOT":
-            self.labeled_data = BeaconMsg.parse_es_adcs_estimates_bdot(self.data)
+            self.labeled_data.update(BeaconMsg.parse_es_adcs_estimates_bdot(self.data))
         elif self.header.dc_id == "ES_ADCS_CONTROL_VALUES_MTQ":
-            self.labeled_data = BeaconMsg.parse_es_adcs_control_values_mtq(self.data)
+            self.labeled_data.update(BeaconMsg.parse_es_adcs_control_values_mtq(self.data))
         elif self.header.dc_id == "ConOpsFlags":
-            self.labeled_data = BeaconMsg.parse_conops_flags(self.data)
+            self.labeled_data.update(BeaconMsg.parse_conops_flags(self.data))
         elif self.header.dc_id == "AOCS_CNTRL_SYS_STATE":
-            self.labeled_data = BeaconMsg.parse_aocs_cntrl_sys_state(self.data)
+            self.labeled_data.update(BeaconMsg.parse_aocs_cntrl_sys_state(self.data))
         elif self.header.dc_id == "ADCS_3":
-            self.labeled_data = BeaconMsg.parse_adcs_3(self.data)
+            self.labeled_data.update(BeaconMsg.parse_adcs_3(self.data))
         elif self.header.dc_id == "ADCS_4":
-            self.labeled_data = BeaconMsg.parse_adcs_4(self.data)
+            self.labeled_data.update(BeaconMsg.parse_adcs_4(self.data))
         else:
-            self.labeled_data = BeaconMsg.parse_other(self.data)
+            self.labeled_data.update(BeaconMsg.parse_other(self.data))
     
     @staticmethod
     def parse_other(data: bytes):
@@ -928,8 +929,8 @@ class Beacon:
 
 
 class Beacon_Parser:
-    def __init__(self, resp_queue):
-        self.resp_queue = resp_queue
+    def __init__(self, beacon_queue):
+        self.beacon_queue = beacon_queue
         self.cmplt_msg_list = []
         self.partial_msg = None
         self.complete_msg = None
@@ -948,7 +949,7 @@ class Beacon_Parser:
             # Add the newly completed message to the message list
             self.complete_msg.label()
             self.cmplt_msg_list.append(self.complete_msg)
-            self.resp_queue.put(self.cmplt_msg_list[-1].labeled_data)
+            self.beacon_queue.put(self.cmplt_msg_list[-1].labeled_data)
 
             # Add all other complete messages to the message list
             for i in range(1, len(new_beacon.msg_list)):
@@ -956,7 +957,7 @@ class Beacon_Parser:
                     self.complete_msg = new_beacon.msg_list[i]
                     self.complete_msg.label()
                     self.cmplt_msg_list.append(self.complete_msg)
-                    self.resp_queue.put(self.cmplt_msg_list[-1].labeled_data)
+                    self.beacon_queue.put(self.cmplt_msg_list[-1].labeled_data)
 
 
         # If previous message wasn't partial...
@@ -967,7 +968,7 @@ class Beacon_Parser:
                     self.complete_msg = new_beacon.msg_list[i]
                     self.complete_msg.label()
                     self.cmplt_msg_list.append(self.complete_msg)
-                    self.resp_queue.put(self.cmplt_msg_list[-1].labeled_data)
+                    self.beacon_queue.put(self.cmplt_msg_list[-1].labeled_data)
 
         if len(new_beacon.msg_list) > 0:
             # If the final message in the beacon message list is partial...

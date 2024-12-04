@@ -150,6 +150,13 @@ class SPACECOMMS_INTERFACE_API:
         self.listening_for_beacons = threading.Event()
         self.threads = {}
 
+    def enqueue_response(self, type, data):
+        response = {
+            "type": type,
+            "data": data
+        }
+        self.resp_queue.put(response)
+
     def command_handler(self, command):
         if command in self.accepted_commands:
             print(f"Received Command {command}")
@@ -160,7 +167,7 @@ class SPACECOMMS_INTERFACE_API:
                 self.threads[command] = command_thread
                 command_thread.start()
         else:
-            self.resp_queue.put("UNKNOWN COMMAND")
+            self.enqueue_response(type="error", data={"error message": "unkown command"})
 
     def cleanup(self):
         self.listening_for_beacons.clear()
@@ -176,12 +183,14 @@ class SPACECOMMS_INTERFACE_API:
         serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
         parsed_response = obc_api.resp_getUptime(serialized_response)
 
-        self.resp_queue.put(vars(parsed_response["s__upTime"]))
+        self.enqueue_response(type="uptime", data=vars(parsed_response["s__upTime"]))
+
         print("GET_UPTIME stopped")
 
     def start_beacon_listening(self):
         self.listening_for_beacons.set()
-        beacon_parser = Beacon_Parser(self.resp_queue)
+        beacon_queue = Queue()
+        beacon_parser = Beacon_Parser(beacon_queue)
         message = BEACON_LISTEN
         listen_id = message["id"]
         client = WebSocketClient.WebSocketClient(enableSSL=False)
@@ -195,6 +204,10 @@ class SPACECOMMS_INTERFACE_API:
                 frame = response["ax25Frame"]
                 decoded_frame = base64.b64decode(frame)
                 beacon_parser.parse_beacon(decoded_frame)
+                while not beacon_queue.empty():
+                    parsed_beacon = beacon_queue.get()
+                    self.enqueue_response(type="beacon", data=parsed_beacon)
+                    
             elif response.get("type") == "Error":
                 logging.error("%s", response)
                 exit(0)
