@@ -17,7 +17,7 @@
 # * all changes will be overwritten !!!
 # ********************************************************************************************
 
-from SerDesHelpers import *
+from layer_1.parsing.telemetry_parser.SerDesHelpers import *
 
 class dc_parser:
     NUM_TASKS = 0

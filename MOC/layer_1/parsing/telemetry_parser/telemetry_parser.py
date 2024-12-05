@@ -12,9 +12,7 @@ import datetime
 import os
 from struct import unpack_from
 from rich import print
-from dependencies import es_crc
-from dependencies import cobs
-from dependencies import datacache
+from layer_1.parsing.telemetry_parser.dependencies import es_crc, cobs, datacache
 import csv
 import glob
 from itertools import islice
@@ -181,10 +179,10 @@ class TelemetryMsg:
 #
 # @details Public class used to generate CSV files given a message list
 #          and input file. After parsing telemetry files with class TelemetryFile,
-#          the user can use CSVFiles by passing the TelemtryFile message list and 
+#          the user can use Unpacker by passing the TelemtryFile message list and 
 #          file name.
 
-class CSVFiles:
+class Unpacker:
     dc_entries_dict = {
         0x00000010: "OBC_0",
         0x00000011: "ADCS_0",
@@ -221,21 +219,31 @@ class CSVFiles:
 
     def __init__(self, msglist, input_file):
         self.msglist = msglist
-        self.output_folderpath = CSVFiles.generate_output_folderpath(input_file)
-            
+
+        # Uncomment if generating CSV files, this is temporary
+        # self.output_folderpath = Unpacker.generate_output_folderpath(input_file)
+
+    def generate_json_data(self):
+        data_list = []
+        for msg in self.msglist:
+            if len(msg.data) > 0:
+                parsed_data = Unpacker.parse_msg_data(msg)
+                data_list.append(parsed_data)
+        return data_list
+
     # Public user function
     def generate_csv_files(self):
         for msg in self.msglist:
             if len(msg.data) > 0:
-                parsed_data = CSVFiles.parse_msg_data(msg)
+                parsed_data = Unpacker.parse_msg_data(msg)
                 print(parsed_data, end="\n\n")
                 output_filepath = self.generate_output_filepath(msg)
                 file_exists = os.path.exists(output_filepath)
 
                 if not file_exists:
-                    CSVFiles.write_header(parsed_data, output_filepath)
+                    Unpacker.write_header(parsed_data, output_filepath)
 
-                CSVFiles.append_data(msg, parsed_data, output_filepath)
+                Unpacker.append_data(msg, parsed_data, output_filepath)
 
     # Generates output folderpath given input TLM file name
     @staticmethod
@@ -248,7 +256,7 @@ class CSVFiles:
     
     # Generates output filepath given message type
     def generate_output_filepath(self, msg):
-        file_name = CSVFiles.dc_entries_dict[msg.msg_type] + ".csv"
+        file_name = Unpacker.dc_entries_dict[msg.msg_type] + ".csv"
         output_filepath = os.path.join(self.output_folderpath, file_name)
         return output_filepath
     
@@ -258,21 +266,21 @@ class CSVFiles:
         (data, length) = datacache.dc_parser(NUM_TASKS).parse_by_id(msg.msg_type, msg.data)
         data_dict = data.__dict__
         readable_timestamp = unixtime_to_readable_date(msg.timestamp)
-        parsed_data = {"timestamp": readable_timestamp, "dc_id": CSVFiles.dc_entries_dict[msg.msg_type]}
-        if CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_0":
-            parsed_data.update(CSVFiles.parse_adcs_0_vec(data_dict))
-        elif CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_1":
-            parsed_data.update(CSVFiles.parse_adcs_1_vec(data_dict))
-        elif CSVFiles.dc_entries_dict[msg.msg_type] == "ADCS_2":
-            parsed_data.update(CSVFiles.parse_adcs_2_vec(data_dict))
-        elif CSVFiles.dc_entries_dict[msg.msg_type] == "AOCS_CNTRL_TLM":
-            parsed_data.update(CSVFiles.parse_aocs_cntrl_tlm_vec(data_dict))
-        elif CSVFiles.dc_entries_dict[msg.msg_type] == "EPS_3": # Hasn't been tested, tlm files don't have this right now
-            parsed_data.update(CSVFiles.parse_eps_3_vec(data_dict))
-        elif CSVFiles.dc_entries_dict[msg.msg_type] == "EPS_4": # Hasn't been tested, tlm files don't have this right now
-            parsed_data.update(CSVFiles.parse_eps_4_vec(data_dict))
-        elif CSVFiles.dc_entries_dict[msg.msg_type] == "TaskStats":
-            parsed_data.update(CSVFiles.parse_taskstats_vec(data_dict))
+        parsed_data = {"timestamp": readable_timestamp, "dc_id": Unpacker.dc_entries_dict[msg.msg_type]}
+        if Unpacker.dc_entries_dict[msg.msg_type] == "ADCS_0":
+            parsed_data.update(Unpacker.parse_adcs_0_vec(data_dict))
+        elif Unpacker.dc_entries_dict[msg.msg_type] == "ADCS_1":
+            parsed_data.update(Unpacker.parse_adcs_1_vec(data_dict))
+        elif Unpacker.dc_entries_dict[msg.msg_type] == "ADCS_2":
+            parsed_data.update(Unpacker.parse_adcs_2_vec(data_dict))
+        elif Unpacker.dc_entries_dict[msg.msg_type] == "AOCS_CNTRL_TLM":
+            parsed_data.update(Unpacker.parse_aocs_cntrl_tlm_vec(data_dict))
+        elif Unpacker.dc_entries_dict[msg.msg_type] == "EPS_3": # Hasn't been tested, tlm files don't have this right now
+            parsed_data.update(Unpacker.parse_eps_3_vec(data_dict))
+        elif Unpacker.dc_entries_dict[msg.msg_type] == "EPS_4": # Hasn't been tested, tlm files don't have this right now
+            parsed_data.update(Unpacker.parse_eps_4_vec(data_dict))
+        elif Unpacker.dc_entries_dict[msg.msg_type] == "TaskStats":
+            parsed_data.update(Unpacker.parse_taskstats_vec(data_dict))
         else:
             parsed_data.update(data_dict)
 
@@ -714,9 +722,9 @@ if __name__ == "__main__":
             tlm_file = TelemetryFile(file)
             tlm_file.parse_file()
 
-            file_handler = CSVFiles(tlm_file.msglist, tlm_file.fname)
-            file_handler.generate_csv_files()
-
+            file_handler = Unpacker(tlm_file.msglist, tlm_file.fname)
+            # file_handler.generate_csv_files()
+            file_handler.generate_json_data()
         except Exception as exc:
             print(f'Oops: {exc}')
         except KeyboardInterrupt:

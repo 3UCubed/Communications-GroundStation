@@ -12,10 +12,14 @@ database = client["data"]
 def command_resp_handler():
     while True:
         resp = resp_queue.get()
-        print(resp, end="\n\n", flush=True)
+        # print(resp, end="\n\n", flush=True)
         collection = database[resp["type"]]
         document = resp["data"]
-        insertion_result = collection.insert_one(document)
+        if resp["type"] == "telemetry":
+            print(f"\n\nDocument to insert: {document}")
+            insertion_result = collection.insert_many(document)
+        else:
+            insertion_result = collection.insert_one(document)
         print(f"Insertion result: {insertion_result}")
 
 

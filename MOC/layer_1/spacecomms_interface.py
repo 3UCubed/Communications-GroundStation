@@ -14,6 +14,7 @@ from layer_1.web_socket_api.constants import SatelliteId, CommandType, TripType,
 from layer_1.web_socket_api.RadioConfiguration import set_radio_address, update_frequency, update_aes_key
 from layer_1.web_socket_client import WebSocketClient
 from layer_1.parsing.beacon_parser.realtime_beacon_parser import Beacon_Parser
+from layer_1.parsing.telemetry_parser.telemetry_parser import Unpacker, TelemetryFile
 
 import logging
 import re
@@ -23,6 +24,7 @@ import threading
 import base64
 from queue import Queue
 import time
+import glob
 
 
 # JSON Message BeaconListen
@@ -102,39 +104,7 @@ def get_filenames(pattern):
     return filenames
 
 
-def download_instrument_files():
-    regex_pattern = "0000[0-2].(?:(?:IHK)|(?:PMT)|(?:ERP))"
-    print("Downloading dirlist...")
-    download_file("DIRLIST.TXT")
-    filenames = get_filenames(regex_pattern)
-    number_of_files = len(filenames)
-    current_file_number = 1
-    missed_files = []
-    total_time_start = time.perf_counter()
-    for file in filenames:
-        start_time = time.perf_counter()
-        print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
-        status = download_file(file)
-        retries = 0
 
-        while retries < 10 and status == 0:
-            retries += 1
-            print(f"Problem downloading file, retry #{retries}")
-            time.sleep(5)
-            status = download_file(file)
-
-        if status == 0:
-            missed_files.append(file)
-
-        current_file_number += 1
-        end_time = time.perf_counter()
-        elapsed_time = round(end_time - start_time)
-        print(f"Process took {elapsed_time} seconds.")
-    total_time_end = time.perf_counter()
-    total_elapsed_time = round(total_time_end - total_time_start)
-    print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
-    print("Missed files: ", end="")
-    print(', '.join(missed_files))
 
 
 class SPACECOMMS_INTERFACE_API:
@@ -145,6 +115,9 @@ class SPACECOMMS_INTERFACE_API:
             'start_beacon': self.start_beacon_listening,
             'stop_beacon': self.stop_beacon_listening,
             'get_telemetry': self.download_telemetry_files,
+            'get_instrument': self.download_instrument_files,
+            'get_dirlist': self.download_dirlist,
+            'parse_telemetry': self.parse_telemetry,
             'shutdown': self.cleanup
         }
         self.listening_for_beacons = threading.Event()
@@ -250,3 +223,53 @@ class SPACECOMMS_INTERFACE_API:
         print(', '.join(missed_files))
 
 
+    def parse_telemetry(self):
+        root_dir = os.path.dirname(__file__)
+        tlm_file_list = glob.glob(f"{root_dir}/downloaded_files/*.TLM")
+        for file in tlm_file_list:
+            tlm_file = TelemetryFile(file)
+            tlm_file.parse_file()
+            file_handler = Unpacker(tlm_file.msglist, tlm_file.fname)
+            json_data = file_handler.generate_json_data()
+            self.enqueue_response(type="telemetry", data=json_data)
+
+    def download_instrument_files(self):
+        # Get 21 to 42
+        regex_pattern = "(?:000(?:(?:2[1-9])|(?:3[0-9])|(?:4[0-2]))).(?:(?:IHK)|(?:PMT)|(?:ERP))"
+        print("Downloading dirlist...")
+        download_file("DIRLIST.TXT")
+        filenames = get_filenames(regex_pattern)
+        print(filenames)
+        number_of_files = len(filenames)
+        current_file_number = 1
+        missed_files = []
+        total_time_start = time.perf_counter()
+        for file in filenames:
+            start_time = time.perf_counter()
+            print(f"[{current_file_number}/{number_of_files}] Downloading {file}...")
+            status = download_file(file)
+            retries = 0
+
+            while retries < 10 and status == 0:
+                retries += 1
+                print(f"Problem downloading file, retry #{retries}")
+                time.sleep(5)
+                status = download_file(file)
+
+            if status == 0:
+                missed_files.append(file)
+
+            current_file_number += 1
+            end_time = time.perf_counter()
+            elapsed_time = round(end_time - start_time)
+            print(f"Process took {elapsed_time} seconds.")
+        total_time_end = time.perf_counter()
+        total_elapsed_time = round(total_time_end - total_time_start)
+        print(f"Downloaded {number_of_files - len(missed_files)} of {number_of_files} files in {total_elapsed_time} seconds.")
+        print("Missed files: ", end="")
+        print(', '.join(missed_files))
+
+    def download_dirlist(self):
+        print("Downloading dirlist...")
+        download_file("DIRLIST.TXT")
+        print("Downloaded Dirlist", end="\n\n")
