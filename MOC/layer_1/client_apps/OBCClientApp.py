@@ -3,7 +3,7 @@
 # * @brief MAC FP client Python implementation generator
 # ********************************************************************************************
 # * @version           interface OBC v2.0
-# *
+# *1
 # * @copyright         (C) Copyright EnduroSat
 # *
 # *                    Contents and presentations are protected world-wide.
