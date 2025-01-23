@@ -128,6 +128,7 @@ class SPACECOMMS_INTERFACE_API:
         }
         self.listening_for_beacons = threading.Event()
         self.threads = {}
+        init_radio()
 
 
 # @brief Enqueues a response to the response queue.
@@ -192,11 +193,15 @@ class SPACECOMMS_INTERFACE_API:
 
     def get_uptime(self):
         serialized_request = list(obc_api.req_getUptime())
+
         serialized_response = send_command(SatelliteId.DEFAULT_ID, CommandType.OBC_FP_GATEWAY, TripType.WAIT_FOR_RESPONSE, ModuleMac.OBC_MAC_ADDRESS, payload=serialized_request)
+        
+        
         parsed_response = obc_api.resp_getUptime(serialized_response)
 
         self.enqueue_response(type="uptime", data=vars(parsed_response["s__upTime"]))
 
+        #print(parsed_response)
         print("GET_UPTIME stopped")
 
 
@@ -312,8 +317,8 @@ class SPACECOMMS_INTERFACE_API:
 #          and any missed files are tracked and displayed along with the time taken for the process.
 
     def download_instrument_files(self):
-        # Get 21 to 42
-        regex_pattern = "(?:000(?:(?:2[1-9])|(?:3[0-9])|(?:4[0-2]))).(?:(?:IHK)|(?:PMT)|(?:ERP))"
+        # Get 0 to 48
+        regex_pattern = "(?:000(?:(?:0[0-9])|(?:1[0-9])|(?:2[0-9])|(?:3[0-9])|(?:4[0-8]))).(?:(?:IHK)|(?:PMT)|(?:ERP))"
         print("Downloading dirlist...")
         download_file("DIRLIST.TXT")
         filenames = get_filenames(regex_pattern)
